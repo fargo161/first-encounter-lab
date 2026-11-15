@@ -4,7 +4,7 @@ Teddy approved all six Lab design and governance choices on 14 November 2026. Th
 
 ## M01. ROOM interface and source ownership
 
-**Approved.** Nova/ChatGPT owns separately scoped ROOM repairs. Codex A4 owns the Lab-side bridge to an approved interface. The versioned C6 contract, separate repair assignment, and immutable, independently tested ROOM candidate are still pending. Legal movement, correlated results, occupancy, interruption, both cameras, restore, renderer compatibility and the prior timeout need proof. Physical integration waits for that candidate.
+**Approved.** Nova/ChatGPT owns separately scoped ROOM repairs. Codex A4 owns the Lab-side bridge to an approved interface. The [revised C6 contract](../architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md) is approved. The separate Stage A/Stage B authorizations, Nova's unchanged shared suite, matching Claude browser baseline and immutable, independently tested ROOM candidate remain pending. Step 1 reports successful reruns of the earlier block-layout timeout. Legal movement, correlated results, occupancy, interruption, both cameras, restore and renderer compatibility need candidate proof. [C6 approval receipt](ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) Physical integration waits for that candidate.
 
 ## M02. Encounter adaptation
 

@@ -2,7 +2,7 @@
 
 ## 1. Identity and status
 
-First Encounter Lab is Trapstar's first reusable gameplay tile within the First Encounter Game program. It uses a small store to prove rules that should also work in other places. This new repository holds the design and source locks. Its evidence baseline is preflight `2026-11-14-lab-pf-952b4`. Teddy approved M01–M06 on 14 November 2026. C6 and the final ROOM candidate still need approval and testing. Gameplay build authority requires a separate owner command. [Owner approval record](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) · [Preflight report](docs/preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md)
+First Encounter Lab is Trapstar's first reusable gameplay tile within the First Encounter Game program. It uses a small store to prove rules that should also work in other places. This new repository holds the design and source locks. Its evidence baseline is preflight `2026-11-14-lab-pf-952b4`. Teddy approved M01–M06 on 14 November 2026. Teddy approved the revised C6 contract on 15 November 2026. The independently tested real ROOM candidate and shared suite remain pending. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) Gameplay build authority requires a separate owner command. [Owner approval record](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) · [Preflight report](docs/preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md)
 
 ## 2. Player experience
 
@@ -18,7 +18,7 @@ In Play Mode, the assignment is fixed. Both roles use the same composer and acti
 
 ## 4. Scope and exclusions
 
-Target one offline HTML file that opens by double-click and supports portable run files. Use plain boxes for fixtures and the original-quality slim male and female bodies from Arcade Cast v0.12, with Goose and Brifern in a separate talking-head view. Room Creator Combat Room v0.1.1 is a proposed input, with combat and shooting disabled for the Lab. Selection and the movement interface remain open.
+Target one offline HTML file that opens by double-click and supports portable run files. Use plain boxes for fixtures and the original-quality slim male and female bodies from Arcade Cast v0.12, with Goose and Brifern in a separate talking-head view. Room Creator Combat Room v0.1.1 is a proposed input, with combat and shooting disabled for the Lab. The approved C6 contract governs the movement interface. The exact repaired runtime and scene remain open.
 
 City simulation, driving, combat, theft, job systems, eavesdropping, live AI, online services, multiplayer, new missions, and ZANT expansion are outside the Lab scope. Modular source can make a later Unity port easier. Unity has a separate authorization gate. [Source provenance](docs/provenance/SOURCE_PROVENANCE.md)
 
@@ -65,7 +65,7 @@ The overlay replaces `source/ui-route.js` and `source/build.py`, adds `source/ui
 
 ## 9. C1–C8 handoff contracts
 
-All are proposed for build review.
+C6 is approved as a design. Its real implementation and tests remain pending. The other handoff summaries guide later scope review. [Approved C6](docs/architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md)
 
 | Contract | Owner and handoff | Critical proof |
 |---|---|---|
@@ -90,9 +90,9 @@ A proves safe foundations and stable bindings for both identities. B demonstrate
 
 ## 12. Unresolved decisions and implementation risks
 
-The six design choices are approved. Open work includes the versioned ROOM C6 contract, Nova's separate repair assignment, selection of an immutable tested ROOM runtime, exact authorized production paths, and the native Windows and owner acceptance evidence. The decision register maps G01–G17 to the standing rules, owners, and verification gates.
+M01–M06 and the revised C6 contract are approved. Open work includes Nova's separate ROOM repair assignment, selection of an immutable tested ROOM runtime, exact authorized production paths, and the native Windows and owner acceptance evidence. The decision register maps G01–G17 to the standing rules, owners, and verification gates.
 
-The motion prototype can cross a counter, accepts cross-story segments, and does not correlate safe terminal results. Older renderer paths need regression proof. The fresh preflight ROOM runs had a timeout, browser coverage remained incomplete, and IR3-25 remained one specific actual failure. Frozen test wording and the source authority remain available for review. [Remaining gates](docs/decisions/OPEN_APPROVALS.md) · [Decision register](docs/decisions/DECISION_REGISTER.md#preflight-reconciliation-g01g17)
+The motion prototype can cross a counter, accepts cross-story segments, and does not correlate safe terminal results. Older renderer paths need regression proof. The first preflight reported a ROOM timeout. Step 1 recorded successful block-layout reruns on the same sources. Claude's requested browser baseline remains unavailable, and IR3-25 remains one specific actual failure. Frozen test wording and the source authority remain available for review. [Remaining gates](docs/decisions/OPEN_APPROVALS.md) · [Decision register](docs/decisions/DECISION_REGISTER.md#preflight-reconciliation-g01g17)
 
 ## 13. Acceptance and portability
 
@@ -104,4 +104,4 @@ Documentation corrections cite their source and preserve locked evidence. Teddy'
 
 ## 15. Immediate next action
 
-Teddy and Nova review the approval record, this design, and the remaining gates. Build activity stays paused pending a separate, scoped owner command. [Setup report](docs/setup/REPOSITORY_SETUP_REPORT.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
+Teddy and Nova review the [Phase 0 preflight](docs/preflight/agent-run-2026-11-15-c6-v2/FIRST_ENCOUNTER_LAB_AGENT_RUN_PREFLIGHT_REPORT.md), approval record, and remaining gates. Build activity stays paused pending a separate, scoped owner command. [Setup report](docs/setup/REPOSITORY_SETUP_REPORT.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)

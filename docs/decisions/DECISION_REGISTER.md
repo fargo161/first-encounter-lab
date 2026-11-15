@@ -23,7 +23,7 @@ Standing is scoped to the evidence and date in each row. Teddy’s [14 November 
 
 | ID | Standing | Approved choice and remaining gate |
 |---|---|---|
-| M01 | APPROVED | Nova/ChatGPT owns separately scoped ROOM repairs. A4 owns the Lab-side bridge. Versioned C6, the repair assignment and independent candidate proof remain pending. |
+| M01 | APPROVED | Nova/ChatGPT owns separately scoped ROOM repairs. A4 owns the Lab-side bridge. The [revised C6 contract](../architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md) is approved. Repair assignment and independent candidate proof remain pending. |
 | M02 | APPROVED | Separately versioned M3-derived Lab adaptation and one authoritative history. Exact paths and a separate implementation command remain pending. |
 | M03 | APPROVED | G04, G05, G07, G10 and G12 are adopted as Lab rules. Implementation and verification remain future work. |
 | M04 | APPROVED | Five locked archives, three foundation revisions, and two selected design files. The final tested and pinned ROOM runtime remains pending. |
@@ -57,6 +57,10 @@ The current dispositions preserve the known source conflicts and future verifica
 | G17 | 66 proposed predicates include five VerbNet exact no-hits. | Map Tell/Explain/Identify, Pay with Give/Take, Keep + Promise, exact Accept/Refuse and Change. Preserve greeting/alias and license questions. Defer leaves terms open and Acknowledge conveys receipt. A2. Lock Lab vocabulary before relevant play at B/C. |
 
 [Preflight §G](../preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md#g-designsource-reconciliation)
+
+## Revised C6 approval and current gates
+
+On 15 November 2026 Teddy approved the exact revised ROOM C6 v0.1 contract. L1 keeps legacy movement systems separate. L2 assigns path planning to ROOM for the Lab only. L3 binds just the clerk and customer. The [receipt](ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) supersedes the proposal-status text in the frozen contract. [Step 1](../architecture/ROOM_C6_STEP1_READ_ONLY_INSPECTION_REPORT.md) is accepted historical inspection. Its successful block-layout reruns resolve the first preflight timeout on those tested bytes. Nova's separate repair scope, shared C6 suite, matched Claude browser baseline, tested scene/runtime and actual integration proof remain pending. [Current preflight](../preflight/agent-run-2026-11-15-c6-v2/FIRST_ENCOUNTER_LAB_AGENT_RUN_PREFLIGHT_REPORT.md)
 
 ## Setup checksum and approval update inventory
 
