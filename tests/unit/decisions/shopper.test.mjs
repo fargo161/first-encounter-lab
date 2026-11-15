@@ -43,20 +43,27 @@ test('marked prices score against the matching want budget before comparing list
   assert.deepEqual(result.productCandidates.map(candidate => candidate.score), [4, 7]);
 });
 
-test('the opening separately checks own cash; a preferred unaffordable product remains a product candidate', () => {
+test('an unaffordable preferred product stays ranked while an affordable alternative can be bought', () => {
   const preferred = observation(1, 400, { kind: 'snack' });
   const affordable = observation(2, 200);
-  const result = choose([preferred, affordable], {
+  const options = {
     wants: [{ kind: 'drink', budgetMinor: 150 }, { kind: 'snack', budgetMinor: 450 }], fundsMinor: 350
-  });
-  assert.equal(result.product.productId, preferred.productId);
+  };
+  const result = choose([preferred, affordable], options);
+  assert.equal(result.product.productId, affordable.productId);
+  assert.deepEqual(result.productCandidates.map(candidate => candidate.score), [7, 1]);
   assert.equal(result.productCandidates[0].eligible, true);
-  assert.equal(result.selected, 'Leave');
-  assert.equal(result.offer, null);
-  assert.match(result.reason, /cash does not cover/);
-  const buy = result.openingCandidates.find(candidate => candidate.act === 'Buy');
+  assert.equal(result.selected, 'Buy');
+  assert.equal(result.offer.amountMinor, 200);
+  const buy = result.openingCandidates.find(candidate => candidate.product?.productId === preferred.productId);
   assert.equal(buy.eligible, false);
+  assert.match(buy.reason, /cash does not cover/);
   assert(buy.sources.some(source => source.kind === 'own_account' && source.balanceMinor === 350));
+
+  const noAlternative = choose([preferred], options);
+  assert.equal(noAlternative.selected, 'Leave');
+  assert.equal(noAlternative.offer, null);
+  assert.match(noAlternative.reason, /cash does not cover/);
 
   const overBudget = choose([observation(1, 400)], { fundsMinor: 400 });
   assert.equal(overBudget.selected, 'Buy');
@@ -87,6 +94,26 @@ test('a received unavailability blocks Buy and undisclosed actual stock does not
   assert.equal(unavailable.selected, 'Leave');
   assert.match(unavailable.reason, /told this item is unavailable/);
   assert.deepEqual(unavailable.evidenceObservationIds, ['observation_0001', 'observation_0010']);
+});
+
+test('the shopper offers to buy another observed item when the preferred one is known unavailable', () => {
+  const unavailable = observation(1, 300, { available: false, availabilityObservationId: 'observation_0010' });
+  const available = observation(2, 350, { available: true });
+  const options = { wants: [{ kind: 'drink', budgetMinor: 500 }] };
+  const result = choose([unavailable, available], options);
+  assert.equal(result.selected, 'Buy');
+  assert.equal(result.product.unitId, available.unitId);
+  assert.equal(result.offer.amountMinor, 350);
+  assert.deepEqual(result.openingCandidates.map(candidate => [candidate.product?.unitId, candidate.eligible]), [
+    [unavailable.unitId, false], [available.unitId, true], [undefined, true]
+  ]);
+  assert.match(result.openingCandidates[0].reason, /told this item is unavailable/);
+  assert(result.openingCandidates[0].sources.some(source => source.observationId === 'observation_0010'));
+
+  const unknown = observation(3, 325);
+  const scoped = choose([unavailable, unknown, available], options);
+  assert.equal(scoped.offer.unitId, unknown.unitId);
+  assert.deepEqual(scoped, choose([unavailable, { ...unknown, actualStock: 0 }, available], options));
 });
 
 test('the opening draws its delivery and priority modifiers from the shopper profile', () => {

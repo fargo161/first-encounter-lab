@@ -48,9 +48,11 @@ function immediateOpening(chosen, profile, account) {
   if (product.availabilityObservationId) {
     buySources.push({ kind: 'observation', observationId: product.availabilityObservationId, field: 'available' });
   }
-  if (restriction) return { act: 'Buy', eligible: false, reason: restriction, rows: [], score: null, sources: buySources };
+  if (restriction) {
+    return { act: 'Buy', product, eligible: false, reason: restriction, rows: [], score: null, sources: buySources };
+  }
   return {
-    act: 'Buy', eligible: true, reason: 'I can buy the item I wanted at the marked price.', sources: buySources,
+    act: 'Buy', product, eligible: true, reason: 'I can buy the item I wanted at the marked price.', sources: buySources,
     ...scoreChoice(profile, { getWant: 1, keepBudget: Math.sign(budgetMinor - product.priceMinor) }, buySources)
   };
 }
@@ -59,20 +61,26 @@ function immediateOpening(chosen, profile, account) {
 export function chooseShopperOpening({ actorId, profile = CUSTOMER_PROFILE, wants, products, fundsMinor }) {
   const productCandidates = products.filter(reference => typeof reference.observationId === 'string')
     .map((reference, order) => productChoice(reference, order, wants, profile));
-  const chosen = productCandidates.filter(candidate => candidate.eligible).sort((left, right) =>
+  const rankedProducts = productCandidates.filter(candidate => candidate.eligible).sort((left, right) =>
     right.score - left.score || left.product.priceMinor - right.product.priceMinor || left.order - right.order
-  )[0];
+  );
   const account = { kind: 'own_account', actorId, balanceMinor: fundsMinor };
-  const buy = chosen ? immediateOpening(chosen, profile, account) : {
-    act: 'Buy', eligible: false, reason: 'I have not seen a wanted item with a marked price.', rows: [], score: null, sources: []
-  };
-  const leaveSources = buy.sources;
+  const purchases = rankedProducts.map(candidate => immediateOpening(candidate, profile, account));
+  if (purchases.length === 0) {
+    purchases.push({
+      act: 'Buy', product: null, eligible: false, reason: 'I have not seen a wanted item with a marked price.',
+      rows: [], score: null, sources: []
+    });
+  }
+  const buy = purchases.find(candidate => candidate.eligible);
+  const preferred = purchases[0];
+  const leaveSources = (buy ?? preferred).sources;
   const leave = {
-    act: 'Leave', eligible: true, reason: buy.eligible ? 'I will leave without buying.' : buy.reason,
+    act: 'Leave', eligible: true, reason: buy ? 'I will leave without buying.' : preferred.reason,
     sources: leaveSources, ...scoreChoice(profile, { getWant: -1 }, leaveSources)
   };
-  const opening = buy.eligible && buy.score >= leave.score ? buy : leave;
-  const product = chosen?.product ?? null;
+  const opening = buy && buy.score >= leave.score ? buy : leave;
+  const product = opening.product ?? preferred.product;
   const evidenceObservationIds = [...new Set(productCandidates.flatMap(({ product: observed }) =>
     [observed.observationId, observed.availabilityObservationId].filter(Boolean)))];
 
@@ -82,7 +90,7 @@ export function chooseShopperOpening({ actorId, profile = CUSTOMER_PROFILE, want
       productId: product.productId, unitId: product.unitId, amountMinor: product.priceMinor,
       delivery: { vibe: profile.personality.manner.plain, salience: 'NUANCED' }
     } : null,
-    productCandidates, openingCandidates: [buy, leave],
+    productCandidates, openingCandidates: [...purchases, leave],
     tieRules: { product: ['score', 'lowest_marked_price', 'first_seen'], opening: ['Buy', 'Leave'] }
   });
 }

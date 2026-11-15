@@ -4,7 +4,7 @@
 
 - Scope is the local Headless Generalization v0.2 Steps 1–5 authorized by Teddy. The five implementation checkpoints are committed. [Run scope](docs/runs/headless-generalization-v0-2/RUN_SCOPE.md)
 - Review branch is codex/headless-generalization-v0-2. The previous reviewed v0.1 delivery is 9088cd2fd9bf162319e745853930f8ea2cc40375. Public baseline remains 1278b705302da2b1bbd8b0edcca62d63a66fc866.
-- 54 Step 5 unit tests passed, 0 failed. Node 24.22.1 on Windows. The historical v0.1 runner passed 29 tests and retains its own saves and trace. [v0.1 report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md)
+- 55 unit tests passed after the Step 5 review correction, 0 failed. Node 24.22.1 on Windows. The historical v0.1 runner passed 29 tests and retains its own saves and trace. [v0.1 report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md)
 
 First Encounter Lab is a Trapstar gameplay tile. A clerk and customer share one store state, while each only knows what they have legitimately received. BASED governs delivery. KeyWrapping records communicative meaning in one versioned expression, and Encounter records what happened.
 
@@ -14,7 +14,7 @@ First Encounter Lab is a Trapstar gameplay tile. A clerk and customer share one 
 - Accept, Refuse, Counter and Clarify reach the listener through the same scoped message path. Counter only replaces its linked version and each actor has a two-Counter limit per chain.
 - The clerk uses the list-price floor. Above-list offers reach normal scoring, subject to the receiving actor’s known facts and policies. An external failure fixture records a paid-but-unfulfilled handover; restore and retry preserve a single debit. Scoped actor handles keep private policy and unseen state out of views.
 - Warmth and trust are directed and bounded. A received first-purchase cause is applied once per pair and recipient. The developer scorecard records priorities, personality, delivery, stored judgments, known circumstances and risk.
-- The rules-controlled shopper picks from legitimately observed products and authors its own immediate opening. The human-controlled clerk uses the same eligibility and settlement path. A separate human-customer run reproduces the same effects for equivalent choices.
+- The rules-controlled shopper picks from legitimately observed products and authors its own immediate opening. The human-controlled clerk uses the same eligibility and settlement path. A separate human-customer run reproduces the same effects for equivalent choices. It considers the next ranked item when observed unavailability or the shopper’s own cash blocks the preferred purchase.
 
 New headless saves use kw-expression@1. Open an old v0.1 save with the runner at 9088cd2fd9bf162319e745853930f8ea2cc40375. [Format](docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md) · [$3 transaction comparison](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_KEYWRAPPING_MAPPING.md)
 
