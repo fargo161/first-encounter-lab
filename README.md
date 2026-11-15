@@ -1,16 +1,16 @@
 ```yaml
-phase: headless_v0_3_part_a_A3
+phase: headless_v0_3_part_a_A4
 authorization: part_a_A0_through_A4_only
 latest_reviewed_source: c77a19c5d2cf294279d1be9208343497bbb3246f
-tested_local_candidate: 5989e0511bbf1f67ba238c175b0bceeb836be7ac
-test_evidence: "A3 worktree on the A2 checkpoint, Node v24.22.1, 91 passing, 0 failures or skips"
+tested_local_candidate: 6c55f2abfbc4691725e96b45592a955bf80d78d8
+test_evidence: "91 tests passed on Node v24.22.1, 0 failures or skips"
 latest_report: docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md
 c6_status: approved_contract_real_runtime_and_shared_suite_pending
 stand_in_status: unbuilt
-next_owner_gate: a4_draft_then_independent_a7
+next_owner_gate: independent_a7_then_teddy_nova_review
 publication: local_only
 implementation_scope: headless_immediate_purchase_and_part_a_dialogue
-hold_deposit_meaning: awaiting_documentation
+hold_deposit_meaning: draft_pending_owner_approval
 part_b_authorized: false
 ```
 
@@ -36,5 +36,6 @@ Use Node v24.22.1 in the independent Lab checkout.
 - [Lab decision register](docs/decisions/DECISION_REGISTER.md) · [Format and field origins](docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md) · [Previous v0.2 handoff](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md)
 - Native M3 remains pinned at 76a92fd82ac5ec6f10748f0b439a5d661fff5ea5 with the historical IR3-25 qualification. The First Encounter Game producer stays at cc8371c3c497edcdcfb8a73ec7da9dad4663847a. [Original source lock](docs/provenance/SOURCE_LOCK.json)
 - The approved C6 contract, actual ROOM candidate, shared suite, matched browser baseline, official stand-in, UI and art have distinct gates. Claude's matched baseline is unavailable. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
+- The $5 hold and refundable deposit are a worked draft. The step clock, future obligations, holds, deposits and returns await separate authority. [A4 hold draft](docs/architecture/HEADLESS_HOLD_DEPOSIT_EXPRESSION_WORKED_EXAMPLE_v0_3_DRAFT.md)
 
 The current local authorization covers Part A only. The next gate is the remaining scoped checkpoint and independent review.
