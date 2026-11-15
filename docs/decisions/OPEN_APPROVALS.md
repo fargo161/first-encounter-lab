@@ -1,35 +1,31 @@
-# Open approvals
+# Open approvals and implementation gates
 
-All six items are **NEEDS_OWNER_DECISION**. Teddy records the final choice and scope with Nova's review. The recommendations below are inputs to that review. The 14 November preflight preserves the full alternatives in §M.
+Teddy approved all six Lab design and governance choices on 14 November 2026. This page tracks the work and authorization that remain open. [Owner approval record](FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md)
 
 ## M01. ROOM interface and source ownership
 
-Which exact ROOM candidate will expose safe, correlated movement, actor/camera bindings, occupancy, interruption, and restore? Have Nova/ChatGPT deliver an immutable reviewed candidate or have Teddy separately commission and bound a versioned repair. The preflight recommends the smallest isolated seam and names `source/ui-lab.js`, necessary `source/ui-route.js` hooks, and build/test/scene support as possible review scope. **Codex has no ROOM source edit authority.** A4 consumes only an approved interface. The current overlay is an unsafe preview. This blocks C6 and checkpoint A.
+**Approved.** Nova/ChatGPT owns separately scoped ROOM repairs. Codex A4 owns the Lab-side bridge to an approved interface. The versioned C6 contract, separate repair assignment, and immutable, independently tested ROOM candidate are still pending. Legal movement, correlated results, occupancy, interruption, both cameras, restore, renderer compatibility and the prior timeout need proof. Physical integration waits for that candidate.
 
 ## M02. Encounter adaptation
 
-Will Teddy approve a separately versioned M3-derived Lab adaptation with one authoritative simulation, or enumerate exact protected in-place changes? Prefer the separate adaptation. Record actor/controller and profile scope, money/stock/title/holding, exact assent, and save compatibility. Preserve the sealed M3 v3 behavior and IR3-25 qualification. This blocks C2/C5/C8 and checkpoint A.
+**Approved.** A separately versioned M3-derived Lab adaptation has one authoritative history, with two persistent identities, assignable control, extended roles, economy, observations, relationships and portable saves. Canonical M3 v3 and IR3-25 retain their standing. Exact implementation paths and explicit launch authorization remain open. The separately authorized Encounter, communication and decision lanes may work and test independently during ROOM repair.
 
 ## M03. Five v0.2 compatibility decisions
 
-- **G04** Can candidate filtering use only the actor's known facts, with hidden facts handled by authoritative validation and legitimately visible results? This preserves T12 while interpreting T3.
-- **G05** Does the two-Counter rule apply to both controllers, or does autonomous selection cap its own counters while underlying human candidates remain eligible? Choose and document how T6 and T8 are each evaluated. Preflight favors a guard on autonomous selection.
-- **G07** Will the owner approve a named hold template showing reservation, exact credited deposit and exact balance, or linked proposals within D4? Define activation and release, rounding, refund or forfeiture, and residual risk. Preflight favors individually owed amounts with the deposit refundable while unfulfilled and explicit treatment of the worked $2-on-$5 example.
-- **G10** Does P4 permit performance on the exact due tick with a recorded catch-up order and watermark? Preflight favors this inclusive rule and deterministic phase, time, then ID ordering. Confirm its difference from the EA-C1 boundary.
-- **G12** In Case 4, should the spoken reason name the changed factor that flipped the outcome or the strongest negative row? Preflight favors the decisive changed factor, then largest negative with stable ties if none was decisive.
-
-Resolve affected behavior before checkpoints B/C, and carry approved interpretations into T1–T17 without rewriting their original wording.
+**Approved.** G04 uses known facts for menus and validates hidden facts at authoritative execution. G05 applies two Counters per chain to both controllers with equal eligibility. G07 freezes visible hold terms, records the $2 deposit and $3 balance on a $5 item, and preserves the refund obligation and causal trust evidence after a no-show. The scorecard reconciliation adjusts Counter scores for Cases 1 and 4 while preserving the selected outcomes. G10 includes performance at the due tick and persists deterministic catch-up state. G12 names the deciding factor where identifiable with a stable fallback and a private scorecard. Implementation and verification remain future work. [Approved M03 rules](FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md#m03--five-gameplay-interpretations)
 
 ## M04. Immutable source selection
 
-Which five archive pins and three foundation commits in preflight §D are adopted for the candidate, and with which ROOM baseline/seam disposition from M01? Confirm exact bytes, selected design members, scene identity strategy, usage rights, and any approved replacement by name and digest. The separate Stage 12 authority commit remains an authority record. Candidate selection is required at checkpoint A.
+**Approved.** Use the five locked archives, three foundation revisions, and two selected design files. Claude's overlay is candidate evidence. The final tested, pinned ROOM runtime and fixed scene IDs or an expressly approved immutable scene remain open. Check original-image and vocabulary rights before public redistribution.
 
 ## M05. Ownership and concurrency
 
-Does the owner approve the proposed Lead/A1–A7 plan, single-writer paths, independent A7, and Lead plus up to three specialist slots subject to then-current access? Name any changed file boundaries and dependencies in the future launch authorization. Resolve before dispatching production.
+**Approved.** One Lead and seven specialist roles, with up to four concurrent slots including the Lead, one accountable writer per file, component tests by specialists and independent proof by A7. The owner must still name permitted paths and authorize launch. The Lead and specialists remain inactive.
 
 ## M06. Native Windows acceptance
 
-Who will launch and review the exact final offline Windows candidate? Preflight recommends A7's native proof plus Teddy's playthrough. Confirm evidence for both roles, network denial, save export/import and the precise HTML hash, or authorize Teddy to produce equivalent evidence. Required at checkpoint E.
+**Approved.** A7 will verify the exact hashed artifact on native Windows, offline, through both perspectives and a portable save round-trip. Teddy then personally plays the same delivered artifact for final approval. The artifact and all evidence are still future work.
 
-[Preflight §M](../preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md#m-owner-decisions-and-change-authorizations) · [Decision register](DECISION_REGISTER.md)
+Production requires a separate explicit owner build command naming the reviewed revision, source lock, permitted paths, owners and checkpoints. All integrated tests remain **NOT RUN / FUTURE BUILD**.
+
+[Decision register](DECISION_REGISTER.md) · [Build checkpoints](../architecture/BUILD_CHECKPOINTS.md) · [Acceptance matrix](../testing/ACCEPTANCE_MATRIX.md)

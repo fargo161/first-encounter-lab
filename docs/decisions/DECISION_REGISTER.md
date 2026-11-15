@@ -1,6 +1,6 @@
 # Decision register
 
-Standing is scoped to the evidence and date in each row. The [authority guide](../provenance/DOCUMENT_AUTHORITY.md) governs conflicts.
+Standing is scoped to the evidence and date in each row. Teddy’s [14 November owner approval record](FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) supersedes the setup-time `open_authorizations` statuses in the [source lock](../provenance/SOURCE_LOCK.json) and the pending labels in the historical preflight and setup report. The source lock and its fingerprints stay byte-identical. [Authority guide](../provenance/DOCUMENT_AUTHORITY.md)
 
 | Item | Standing and evidence | Further approval |
 |---|---|---|
@@ -19,41 +19,61 @@ Standing is scoped to the evidence and date in each row. The [authority guide](.
 
 [Selected interaction §1](../design/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md#1-status-of-each-decision) · [Selected v0.2 §§12–15](../design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md#12-lab-policies) · [Preflight report](../preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md)
 
-## Pending owner decisions
+## Owner-approved Lab decisions
 
-| ID | Standing | Approval affects |
+| ID | Standing | Approved choice and remaining gate |
 |---|---|---|
-| M01 | NEEDS_OWNER_DECISION | Exact ROOM interface and protected source owner. |
-| M02 | NEEDS_OWNER_DECISION | Exact M3-derived adaptation boundary. |
-| M03 | NEEDS_OWNER_DECISION | G04, G05, G07, G10, G12. |
-| M04 | NEEDS_OWNER_DECISION | Adopt immutable source inputs. |
-| M05 | NEEDS_OWNER_DECISION | Concurrency and file ownership. |
-| M06 | NEEDS_OWNER_DECISION | Native Windows final acceptance plan. |
+| M01 | APPROVED | Nova/ChatGPT owns separately scoped ROOM repairs. A4 owns the Lab-side bridge. Versioned C6, the repair assignment and independent candidate proof remain pending. |
+| M02 | APPROVED | Separately versioned M3-derived Lab adaptation and one authoritative history. Exact paths and a separate implementation command remain pending. |
+| M03 | APPROVED | G04, G05, G07, G10 and G12 are adopted as Lab rules. Implementation and verification remain future work. |
+| M04 | APPROVED | Five locked archives, three foundation revisions, and two selected design files. The final tested and pinned ROOM runtime remains pending. |
+| M05 | APPROVED | One Lead and seven specialists, at most four concurrent slots including the Lead, one writer per file and independent A7. Exact paths and launch are pending. |
+| M06 | APPROVED | A7 verifies the exact hashed artifact on native Windows, then Teddy plays that same artifact. The deliverable and evidence remain future work. |
 
-[Full open approvals](OPEN_APPROVALS.md)
+[Owner approval record](FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) · [Remaining gates](OPEN_APPROVALS.md)
 
 ## Preflight reconciliation G01–G17
 
-The proposed dispositions below preserve the source conflict and the future gate. Approval requirements are in M01–M06.
+The current dispositions preserve the known source conflicts and future verification gates. The owner-approved Lab rules govern the five M03 rows.
 
 | ID | Conflict or standing | Proposed treatment, owner, and gate |
 |---|---|---|
 | G01 | M3 uses fixed human/NPC, one item/holder, and NPC-only profiles with exactly service/privacy/verification. | Persistent identities, assignable controller and explicit wider roles in a versioned adaptation. A1/A3/A6. M02 before A. |
 | G02 | Twenty BASED codes, three authored cue sets, no delivery scoring in M3. | Author unique cue kinds for each offered vibe. Apply the receiver's tastes, Subtle threshold and transient sign nudge. A2/A3/A7. All exposed cues need B05 proof by E. |
 | G03 | Design permits a promise before funds exist. | Enforce actual payment at Do/Settle. Separate unsupported, impossible, forbidden and unwilling. A1/A2. Verify at B and C. |
-| G04 | T3 and T12 can diverge when a fact is hidden. | Filter on known facts and validate world truth on execution. A1/A2/A6/A7. M03 before affected checks at B/C. |
-| G05 | NPC Counter cap versus exact candidate parity in T6/T8. | Review a cap on autonomous selection and common base eligibility. A2/A3/A6. M03 before B/C. |
+| G04 | T3 and T12 can diverge when a fact is hidden. | Apply known-fact menu filtering. Validate hidden facts during authoritative execution and reveal them only through legitimate outcomes. A1/A2/A6/A7. Prove T3/T12. |
+| G05 | NPC Counter cap versus exact candidate parity in T6/T8. | Apply the same two-Counter maximum per chain and the same eligibility to both controllers. A2/A3/A6. Prove T6/T8. |
 | G06 | M3's fixed custodian/item and simple balances. | Separate personal cash and till, track integer minor units and stable stock, title, holding and reservations. A1. M02 before A, prove at B. |
-| G07 | Deposit, part payments, residual risk and D4's two-clause scope conflict. | Exact deposit and balance under one price with explicit reservation/refund/release and transparent terms. A1/A2/A3. M03 before hold behavior at C. |
+| G07 | Deposit, part payments, residual risk and D4's two-clause scope conflict. | Freeze the $2 deposit and $3 balance on a $5 item with visible reservation, pickup and refund terms. Express release after a no-show preserves the refundable obligation and causal trust evidence. Apply the approved scorecard reconciliation. A1/A2/A3. Prove at C. |
 | G08 | M3's composite exchange versus D6/P3. | Precheck both sides, commit payment then handover separately, record partial state and explicit recovery with stable IDs. A1/A7. B exits after failure/retry proof. |
 | G09 | M3's single active offer and session transitions conflict with durable proposals and arrangements. | Retain exact assent, supersession history, defer and per-part done/late/waived facts. A1/A2. C requires leave/return proof. |
-| G10 | EA-C1's `t < due ≤ T` edge versus P4. | Inclusive deadline and deterministic P5 phases, time/ID ordering and persisted cursor. A1/A3. M03 before C. |
+| G10 | EA-C1's `t < due ≤ T` edge versus P4. | Performance at the due tick is on time. Use deterministic catch-up and persisted watermarks. A1/A3. Prove B12 and the relevant return behavior at C. |
 | G11 | v0.2 routine lacks interruption and follow-through rules. | Refuse can choose a bounded alternate or leave, Counter re-enters choice, Defer schedules a fact, Clarify repairs once, obsolete movement releases a routine. A3/A4. D checks no loops. |
-| G12 | Case 4's changed stock factor flips the choice while the largest negative row is policy. | Propose causal reason first, otherwise largest negative and stable ties. Four Accept/Counter/Refuse totals are −1/+2/−6, +3/+2/−8, +1/+2/−6, −7/−4/−3. A3/A7. M03 before C worked cases. |
+| G12 | Case 4's changed stock factor flips the choice while the largest negative row is policy. | Name the deciding factor where identifiable, else the largest negative with stable ties. Keep the scorecard private. G07 adjusts the historical Counter scores in Cases 1 and 4 while preserving all four outcomes. A3/A7. Prove T2 at C. |
 | G13 | M3 belief threshold and accepted EA-IE scoped receipts have distinct roles. | Derive lasting judgments from legitimate events and unique causes, keep explicit stance claims and human diagnostics separate. A1/A2/A3. C tests replay and no duplicate gain. |
-| G14 | Unchecked routes, raw mutable state, resettable FIFO and uncorrelated arrivals. Clerk view and restore unproven. | Approved ROOM C6 seam for geometry, occupancy, interruption, stable bindings and terminal results. A4/Lead. M01 blocks A. |
+| G14 | Unchecked routes, raw mutable state, resettable FIFO and uncorrelated arrivals. Clerk view and restore unproven. | Approved ROOM C6 seam for geometry, occupancy, interruption, stable bindings and terminal results. A4/Lead. The approved and tested interface gates integrated A. Authorized nonphysical lanes can proceed independently. |
 | G15 | Face/gesture prototype lacks recorded performance integration. | Committed presentation cues, Neutral fallback, and inert skip/cancel/replay. A4/A5/A7. Prove at D/E. |
 | G16 | M3 development runs on HTTP and the physical preview embeds editor chrome. | Bundle offline HTML with portable saves and no network or helper. Lead/A6/A7. M06 and native evidence at E. |
 | G17 | 66 proposed predicates include five VerbNet exact no-hits. | Map Tell/Explain/Identify, Pay with Give/Take, Keep + Promise, exact Accept/Refuse and Change. Preserve greeting/alias and license questions. Defer leaves terms open and Acknowledge conveys receipt. A2. Lock Lab vocabulary before relevant play at B/C. |
 
 [Preflight §G](../preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md#g-designsource-reconciliation)
+
+## Setup checksum and approval update inventory
+
+The original [setup checksum manifest](../setup/REPOSITORY_SETUP_MANIFEST.sha256) records the setup baseline through commit `af7c9fddb4b30b328cd6ba3b9bbd16f9e74f836c`. Its 20 entries cover the foundation documents and Git configuration files at that revision. The setup report and the manifest itself were excluded. The publication report update therefore left the original manifest valid for its covered files. The setup report, original manifest, source lock, preflight evidence and selected design specifications are preserved as historical records.
+
+The [dated approval checksum manifest](../setup/REPOSITORY_APPROVALS_MANIFEST_2026-11-14.sha256) covers the complete post-approval tracked document and Git configuration tree, excluding itself. This is a documentation integrity record.
+
+Files changed by this approval update
+
+- [AGENTS.md](../../AGENTS.md)
+- [FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md](../../FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md)
+- [README.md](../../README.md)
+- [docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md](../architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md)
+- [docs/architecture/BUILD_CHECKPOINTS.md](../architecture/BUILD_CHECKPOINTS.md)
+- [docs/decisions/DECISION_REGISTER.md](../decisions/DECISION_REGISTER.md)
+- [docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md](../decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md)
+- [docs/decisions/OPEN_APPROVALS.md](../decisions/OPEN_APPROVALS.md)
+- [docs/provenance/DOCUMENT_AUTHORITY.md](../provenance/DOCUMENT_AUTHORITY.md)
+- [docs/setup/REPOSITORY_APPROVALS_MANIFEST_2026-11-14.sha256](../setup/REPOSITORY_APPROVALS_MANIFEST_2026-11-14.sha256)
+- [docs/testing/ACCEPTANCE_MATRIX.md](../testing/ACCEPTANCE_MATRIX.md)

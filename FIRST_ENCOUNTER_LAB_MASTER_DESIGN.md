@@ -2,7 +2,7 @@
 
 ## 1. Identity and status
 
-First Encounter Lab is Trapstar's first reusable gameplay tile within the First Encounter Game program. It uses a small store to prove rules that should also work in other places. This new repository holds the design and source locks. Its evidence baseline is preflight `2026-11-14-lab-pf-952b4`. Gameplay build authority is pending a separate owner command. [Preflight report](docs/preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md)
+First Encounter Lab is Trapstar's first reusable gameplay tile within the First Encounter Game program. It uses a small store to prove rules that should also work in other places. This new repository holds the design and source locks. Its evidence baseline is preflight `2026-11-14-lab-pf-952b4`. Teddy approved M01–M06 on 14 November 2026. C6 and the final ROOM candidate still need approval and testing. Gameplay build authority requires a separate owner command. [Owner approval record](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) · [Preflight report](docs/preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md)
 
 ## 2. Player experience
 
@@ -55,7 +55,7 @@ The selected v0.2 describes five steps. Read the trigger, actor-scoped facts, an
 
 Accept and Refuse are Remarks, Counter is an Offer, Defer names a pending fact, Clarify requests a missing term, and Acknowledge records receipt without assent. A character can be unwilling even if an act is possible and permitted. The listener receives cues and prominence. The selected BASED label and private reasoning stay private. A cue can shift this exchange's warmth input, while legitimate observed events and stable cause IDs govern lasting judgments.
 
-In Development Mode the inspector shows candidate exclusions, weights, sources, tie reasons, and the hypothetical rule choice for a controlled actor. Clerk and shopper routines use the same legal decisions and wait for confirmed movement. M3 currently has fixed human/NPC roles, exactly `service`, `privacy`, and `verification` profile keys, and only three authored BASED deliveries. The future compatibility decisions cover role widening, privacy and candidate parity, deposit terms, the due-time edge, and the spoken reason in worked Case 4. v0.2 is a design specification. [Decision spec, §§3–16](docs/design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md#3-step-1-what-is-happening) · [Open approvals](docs/decisions/OPEN_APPROVALS.md)
+In Development Mode the inspector shows candidate exclusions, weights, sources, tie reasons, and the hypothetical rule choice for a controlled actor. Clerk and shopper routines use the same legal decisions and wait for confirmed movement. M3 currently has fixed human/NPC roles, exactly `service`, `privacy`, and `verification` profile keys, and only three authored BASED deliveries. M02 approves role widening in a separate adaptation. The approved M03 rules govern privacy and candidate parity, deposit terms, the due-time edge, the spoken reason in worked Case 4, and the G07 scorecard adjustment. v0.2 remains the frozen design baseline. [Decision spec, §§3–16](docs/design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md#3-step-1-what-is-happening) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
 
 ## 8. Authority and provenance
 
@@ -82,7 +82,7 @@ All are proposed for build review.
 
 ## 10. Agent team plan
 
-The Lead coordinates locks and integration. Seven future specialists cover state and economy, communication and KeyWrapping, NPC decisions, the physical bridge, character presentation, UI, and independent testing. The proposed one-writer file plan and four-slot schedule require approval. A4's work is limited to the Lab-side bridge consuming an approved ROOM interface. Nova/ChatGPT handles ROOM source through the owner's separate process. [Agent ownership and handoffs](docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md)
+The Lead coordinates locks and integration. Seven future specialists cover state and economy, communication and KeyWrapping, NPC decisions, the physical bridge, character presentation, UI, and independent testing. M05 approves one writer per file and a maximum of four concurrent slots including the Lead. A separate build command must still name the permitted paths. A4's work is limited to the Lab-side bridge consuming an approved ROOM interface. Nova/ChatGPT handles ROOM source through the owner's separate process. [Agent ownership and handoffs](docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md)
 
 ## 11. Milestones and evidence
 
@@ -90,9 +90,9 @@ A proves safe foundations and stable bindings for both identities. B demonstrate
 
 ## 12. Unresolved decisions and implementation risks
 
-Teddy must resolve M01 (ROOM source and safe movement), M02 (versioned Encounter scope), M03 (the five v0.2 seams), M04 (adopt exact inputs), M05 (ownership and concurrency), and M06 (final Windows acceptance). The decision register maps G01–G17 to the affected owners, recommended treatment, and stop condition.
+The six design choices are approved. Open work includes the versioned ROOM C6 contract, Nova's separate repair assignment, selection of an immutable tested ROOM runtime, exact authorized production paths, and the native Windows and owner acceptance evidence. The decision register maps G01–G17 to the standing rules, owners, and verification gates.
 
-The motion prototype can cross a counter, accepts cross-story segments, and does not correlate safe terminal results. Older renderer paths need regression proof. The fresh preflight ROOM runs had a timeout, browser coverage remained incomplete, and IR3-25 remained one specific actual failure. Frozen test wording and the source authority remain available for review. [Open approvals](docs/decisions/OPEN_APPROVALS.md) · [Decision register](docs/decisions/DECISION_REGISTER.md#preflight-reconciliation-g01g17)
+The motion prototype can cross a counter, accepts cross-story segments, and does not correlate safe terminal results. Older renderer paths need regression proof. The fresh preflight ROOM runs had a timeout, browser coverage remained incomplete, and IR3-25 remained one specific actual failure. Frozen test wording and the source authority remain available for review. [Remaining gates](docs/decisions/OPEN_APPROVALS.md) · [Decision register](docs/decisions/DECISION_REGISTER.md#preflight-reconciliation-g01g17)
 
 ## 13. Acceptance and portability
 
@@ -104,4 +104,4 @@ Documentation corrections cite their source and preserve locked evidence. Teddy'
 
 ## 15. Immediate next action
 
-Teddy and Nova review this design, the setup report, and the open approvals. Build activity stays paused pending a separate, scoped owner command. [Setup report](docs/setup/REPOSITORY_SETUP_REPORT.md) · [Open approvals](docs/decisions/OPEN_APPROVALS.md)
+Teddy and Nova review the approval record, this design, and the remaining gates. Build activity stays paused pending a separate, scoped owner command. [Setup report](docs/setup/REPOSITORY_SETUP_REPORT.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
