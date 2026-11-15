@@ -1,0 +1,178 @@
+{
+  "schema": "first-encounter-lab/headless-purchase-source-inventory@1",
+  "reviewed_baseline": "1278b705302da2b1bbd8b0edcca62d63a66fc866",
+  "tested_implementation_commit": "27b7f93a40fecccd139007204b3ce04580409dd2",
+  "local_review_branch": "codex/headless-purchase-v0_1-2026-11-15",
+  "selected_runner": "Node v24.22.1 on native Windows",
+  "exact_producer_imports": [
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/contracts.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 10930,
+      "sha256": "db7de91d1e53c687b4f0469238d51a9c95e8944ecbfb1388c975536aa4c96b78",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/runtime.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 4545,
+      "sha256": "657d97f16704c973a7696c712a53e9afe55cecd40a4dfdfbbb5e331ef9eecf89",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/views.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 4955,
+      "sha256": "be8138af95f8a3b5758d08013dd171b581c41db7448c9efa880645b8014b0ab9",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    }
+  ],
+  "authored_modules_and_fixtures": [
+    {
+      "path": "communication/purchase-meaning.mjs",
+      "owner": "A2",
+      "purpose": "One Pay-for-Give Offer, exact delivered assent Remark and native outward projection.",
+      "bytes": 8388,
+      "sha256": "c7a50d8365600ba24bab018c44bca38209d70fc46a1636099e97081a65f7cb15"
+    },
+    {
+      "path": "content/based-cues.json",
+      "owner": "A2",
+      "purpose": "Bounded fixture delivery data from the M3 seed.",
+      "bytes": 447,
+      "sha256": "ed64f5cfdd5680702f5cebc3a08e47a6768a9589a329a7599a9a2cd0f9c3517c"
+    },
+    {
+      "path": "content/personalities.json",
+      "owner": "A3",
+      "purpose": "Bounded clerk personality preferences.",
+      "bytes": 156,
+      "sha256": "2306dc02a7998ebec3fc3074671e61afc50e7a1da0ab87a5124f77fcdd008c48"
+    },
+    {
+      "path": "content/products.json",
+      "owner": "A1",
+      "purpose": "Authored one sale product and scoped unknown-product negative fixture.",
+      "bytes": 271,
+      "sha256": "9ba07f4b767cd2ac94e9e143efd50b322cf0757143a891399a4c360b793dd443"
+    },
+    {
+      "path": "content/roles.json",
+      "owner": "A3",
+      "purpose": "Clerk role permissions and priorities.",
+      "bytes": 239,
+      "sha256": "ab5b6ae608a8af2af99c478637a5af5851a3895af57e8aaac16cdc627e4b3a75"
+    },
+    {
+      "path": "core/purchase.mjs",
+      "owner": "A1",
+      "purpose": "One authoritative purchase run, exact assent, separate effects and validated journal replay.",
+      "bytes": 13880,
+      "sha256": "4f7a112dcbcc3b4c8d9a0a4b2c1556f29b8a7f3167e22f286630052332b4c443"
+    },
+    {
+      "path": "core/scenario.mjs",
+      "owner": "A1",
+      "purpose": "Scenario actor identity and grants, initial ledger, invariants and scoped views.",
+      "bytes": 5693,
+      "sha256": "cf5c2a7fa908de65f48a9bb01d602ab196437f8169727afeb49c69c8e888fac6"
+    },
+    {
+      "path": "decisions/clerk.mjs",
+      "owner": "A3",
+      "purpose": "Pure clerk eligibility, scoring, reason/evidence and stable tie rule.",
+      "bytes": 6551,
+      "sha256": "9fc338e7ede199b7b879f7f9afa20088d90069c5cd573f82d75a1e1c3cc35260"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/generate-trace.mjs",
+      "owner": "Lead",
+      "purpose": "Reproduce and check actual domain-ledger traces for both assignments.",
+      "bytes": 4648,
+      "sha256": "ef03ee4e4336619458ab01684615f2a1c02081821b55c1958ba96018f786c481"
+    },
+    {
+      "path": "tests/independent/headless-purchase.test.mjs",
+      "owner": "A7",
+      "purpose": "Independently authored cross-component test suite.",
+      "bytes": 17174,
+      "sha256": "e1928d13faa39f2908db97f5298eef27206f61c5067f89848c2b17982edeb6a7"
+    },
+    {
+      "path": "tests/unit/communication/purchase-meaning.test.mjs",
+      "owner": "A2",
+      "purpose": "Exact terms and scoped delivery component tests.",
+      "bytes": 4446,
+      "sha256": "c32b88de916ddedee61aa12785c754552dfc75706f69dc1a3ac64ef77b5bcdf8"
+    },
+    {
+      "path": "tests/unit/core/purchase.test.mjs",
+      "owner": "A1",
+      "purpose": "Core state, ownership, retry and replay component tests.",
+      "bytes": 8234,
+      "sha256": "1bf603db711b608d2002499044624ec64c076676ebfe11f4b0f2d64ef7d0efb8"
+    },
+    {
+      "path": "tests/unit/decisions/clerk.test.mjs",
+      "owner": "A3",
+      "purpose": "Pure policy, scoped evidence and tie component tests.",
+      "bytes": 4974,
+      "sha256": "65a4a2958fbf28c3df27b759c41809ffb225039f0ad7d892a760e6d70407c501"
+    }
+  ],
+  "adapted_data": [
+    {
+      "path": "content/based-cues.json",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "producer_path": "packages/encounter-atlas/content/m3/seed.json",
+      "scope": "EA and SE cue kind/text and exact template IDs, no original assets copied"
+    }
+  ],
+  "preserved_baseline_sha256": {
+    "docs/provenance/SOURCE_LOCK.json": "63936852e774aa8a3ecc59b07d76948a9bf233651c45ac8050549dbcd1caff06",
+    "docs/setup/REPOSITORY_SETUP_MANIFEST.sha256": "aab1be793dd6b41d72600cff004ea60ee03f35ee96baf6056aec3e21ce6e87bb",
+    "docs/setup/REPOSITORY_APPROVALS_MANIFEST_2026-11-14.sha256": "5ec1260df5937e5fba173471ea77c03a91252fbc449cccbed901119f1d217083",
+    "docs/design/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md": "2ccf9e66a6f9ba56b8272fba1ea3c8c028ec67530f5b97f8a160f9e77100c4d2",
+    "docs/design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md": "8d34cc75ea59434b4e2499b426c995ef24c24d7db6fa057fcf74f1753d9270c3",
+    "docs/architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md": "55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2"
+  },
+  "delivery_artifacts": [
+    "README.md",
+    "docs/reviews/HEADLESS_PURCHASE_A7_REVIEW_2026-11-15.md",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_EVIDENCE_INDEX.md",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_REPORT.sha256",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_SOURCE_MANIFEST.json",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_TRACE.json",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/UNIT_TEST_RESULTS.txt",
+    "evidence/independent/27b7f93/test-results.txt"
+  ],
+  "candidate_paths": [
+    "AGENTS.md",
+    "README.md",
+    "communication/purchase-meaning.mjs",
+    "content/based-cues.json",
+    "content/personalities.json",
+    "content/products.json",
+    "content/roles.json",
+    "core/purchase.mjs",
+    "core/scenario.mjs",
+    "decisions/clerk.mjs",
+    "docs/provenance/build-locks/2026-11-15-v0-1.json",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/RUN_SCOPE.md",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/generate-trace.mjs",
+    "tests/unit/communication/purchase-meaning.test.mjs",
+    "tests/unit/core/purchase.test.mjs",
+    "tests/unit/decisions/clerk.test.mjs",
+    "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+    "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+    "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs"
+  ],
+  "distribution": "Local review branch and bounded owner review ZIP. Public baseline unchanged."
+}

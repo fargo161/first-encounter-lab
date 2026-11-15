@@ -1,0 +1,32 @@
+Node v24.22.1
+node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs
+Exit: 0
+
+✔ a known product compiles into one immutable, versioned Pay-for-Give Offer (1.9973ms)
+✔ unknown products, unsupported shapes and unauthored vibes do not compile (0.4229ms)
+✔ recipient hears authored cues and prominence, without the speaker’s private composition (2.4192ms)
+✔ the authorized recipient assents with a linked Remark that repeats the exact frozen terms (1.0479ms)
+✔ ambiguous or stale assent, wrong recipient and missing hearing do not produce an acceptance (2.5073ms)
+✔ even a matching target and version cannot assent to changed delivered terms (2.6355ms)
+✔ scenario receipt grants the known product and preserves actor privacy (7.8136ms)
+✔ a superseded version and ambiguous assent change no run state (16.8494ms)
+✔ agreement leaves the ledger unchanged; pay and handover commit once (17.7922ms)
+✔ wrong actor, insufficient funds and withheld stock prevent execution (19.0207ms)
+✔ an injected handover failure preserves paid state across reload, then retry fulfills once (37.8686ms)
+✔ malformed, incompatible or tampered saves cannot replace the run (14.626ms)
+✔ command identity, revision and run binding reject conflicts (3.3234ms)
+✔ controller assignment changes initiative but preserves eligible options and ledger mechanics (33.64ms)
+✔ a known exact-price sale is ranked using only the received offer and scoped observation (2.9832ms)
+✔ observed stock and exact-price restrictions cannot be overridden by the delivery (0.3438ms)
+✔ permission comes from the clerk role and never the actor controller (0.3176ms)
+✔ an unknown stock fact asks for clarification without disclosing an authoritative stock value (0.3576ms)
+✔ outward cue prominence affects goodwill and private delivery fields never affect the ranking (0.3102ms)
+✔ the appointed leaning breaks an actual score tie deterministically (0.2668ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2814.0646

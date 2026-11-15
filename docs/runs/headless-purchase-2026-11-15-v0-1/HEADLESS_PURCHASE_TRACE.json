@@ -1,0 +1,2365 @@
+{
+  "proof": "headless-purchase@0.1",
+  "evidence": "Scenario-domain observation and ledger effects. Physical ROOM behavior is outside this proof.",
+  "customerControlled": {
+    "humanId": "actor_0001",
+    "actors": [
+      {
+        "controller": "human",
+        "id": "actor_0001",
+        "name": "Customer",
+        "role": "customer"
+      },
+      {
+        "controller": "rules",
+        "id": "actor_0002",
+        "name": "Clerk",
+        "role": "clerk"
+      }
+    ],
+    "before": {
+      "buyerCashMinor": 1000,
+      "holderId": "actor_0002",
+      "ownerId": "store_0001",
+      "stock": 1,
+      "tillMinor": 0
+    },
+    "after": {
+      "buyerCashMinor": 700,
+      "holderId": "actor_0001",
+      "ownerId": "actor_0001",
+      "stock": 0,
+      "tillMinor": 300
+    },
+    "scope": {
+      "buyer": {
+        "account": {
+          "balanceMinor": 700,
+          "kind": "personal_cash"
+        },
+        "actor": {
+          "controller": "human",
+          "id": "actor_0001",
+          "name": "Customer",
+          "role": "customer"
+        },
+        "messages": [
+          {
+            "id": "message_0002",
+            "outward": {
+              "act": "propose_exchange",
+              "content": {
+                "kind": "proposal",
+                "text": "Offers Pay 300 minor units in exchange for Give Sealed drink (unit_0001)."
+              },
+              "family": "Offer",
+              "framing": [
+                {
+                  "kind": "scope_limit",
+                  "text": "States the selected scope firmly and without adding unrelated demands."
+                }
+              ],
+              "prominence": "measured",
+              "recipientIds": [
+                "actor_0002"
+              ],
+              "scope": {
+                "kind": "subject",
+                "subjectId": "subject_0001"
+              },
+              "senderId": "actor_0001",
+              "subjectIds": [
+                "subject_0001"
+              ],
+              "targetId": "subject_0001",
+              "terms": {
+                "exchange": [
+                  {
+                    "act": "Pay",
+                    "amountMinor": 300
+                  },
+                  {
+                    "act": "Give",
+                    "productId": "subject_0001",
+                    "unitId": "unit_0001"
+                  }
+                ],
+                "proposalId": "proposal_0001",
+                "version": 1
+              }
+            }
+          }
+        ],
+        "observations": [
+          {
+            "channel": "initial",
+            "id": "observation_0001",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "product": {
+                "label": "Sealed drink",
+                "priceMinor": 300,
+                "productId": "subject_0001",
+                "unitId": "unit_0001"
+              },
+              "provenance": "scenario_catalog_listing"
+            },
+            "roots": [
+              {
+                "id": "event_0001",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "event_0001",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "hearing",
+            "id": "observation_0004",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "communication": {
+                "act": "accept_exchange",
+                "content": {
+                  "kind": "response",
+                  "text": "Accepts proposal proposal_0001, version 1, for 300 minor units and item unit_0001."
+                },
+                "family": "Remark",
+                "framing": [
+                  {
+                    "kind": "scope_limit",
+                    "text": "States the selected scope firmly and without adding unrelated demands."
+                  }
+                ],
+                "prominence": "measured",
+                "recipientIds": [
+                  "actor_0001"
+                ],
+                "scope": {
+                  "kind": "subject",
+                  "subjectId": "subject_0001"
+                },
+                "senderId": "actor_0002",
+                "subjectIds": [
+                  "subject_0001"
+                ],
+                "targetId": "subject_0001",
+                "terms": {
+                  "exchange": [
+                    {
+                      "act": "Pay",
+                      "amountMinor": 300
+                    },
+                    {
+                      "act": "Give",
+                      "productId": "subject_0001",
+                      "unitId": "unit_0001"
+                    }
+                  ],
+                  "proposalId": "proposal_0001",
+                  "version": 1
+                }
+              }
+            },
+            "roots": [
+              {
+                "id": "message_0004",
+                "kind": "message"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 2,
+            "source": {
+              "id": "message_0004",
+              "kind": "message"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0005",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "transaction": {
+                "agreementEventId": "event_0003",
+                "amountMinor": 300,
+                "buyerId": "actor_0001",
+                "kind": "payment",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0004",
+                "kind": "event"
+              },
+              {
+                "id": "event_0003",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 4,
+            "source": {
+              "id": "event_0004",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0007",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "transaction": {
+                "kind": "handover_failed",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "reason": "INJECTED_HANDOVER_FAILURE",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0005",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 5,
+            "source": {
+              "id": "event_0005",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0009",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "transaction": {
+                "buyerId": "actor_0001",
+                "kind": "handover",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0006",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 6,
+            "source": {
+              "id": "event_0006",
+              "kind": "event"
+            }
+          }
+        ],
+        "proposals": [
+          {
+            "acceptanceMessageId": "message_0004",
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "handoverEventId": "event_0006",
+            "id": "proposal_0001",
+            "offerMessageId": "message_0002",
+            "paymentEventId": "event_0004",
+            "productId": "subject_0001",
+            "sellerId": "actor_0002",
+            "status": "fulfilled",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        ],
+        "references": [
+          {
+            "label": "Sealed drink",
+            "observationId": "observation_0001",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          }
+        ]
+      },
+      "clerk": {
+        "account": {
+          "balanceMinor": 300,
+          "kind": "store_till"
+        },
+        "actor": {
+          "controller": "rules",
+          "id": "actor_0002",
+          "name": "Clerk",
+          "role": "clerk"
+        },
+        "messages": [
+          {
+            "id": "message_0004",
+            "outward": {
+              "act": "accept_exchange",
+              "content": {
+                "kind": "response",
+                "text": "Accepts proposal proposal_0001, version 1, for 300 minor units and item unit_0001."
+              },
+              "family": "Remark",
+              "framing": [
+                {
+                  "kind": "scope_limit",
+                  "text": "States the selected scope firmly and without adding unrelated demands."
+                }
+              ],
+              "prominence": "measured",
+              "recipientIds": [
+                "actor_0001"
+              ],
+              "scope": {
+                "kind": "subject",
+                "subjectId": "subject_0001"
+              },
+              "senderId": "actor_0002",
+              "subjectIds": [
+                "subject_0001"
+              ],
+              "targetId": "subject_0001",
+              "terms": {
+                "exchange": [
+                  {
+                    "act": "Pay",
+                    "amountMinor": 300
+                  },
+                  {
+                    "act": "Give",
+                    "productId": "subject_0001",
+                    "unitId": "unit_0001"
+                  }
+                ],
+                "proposalId": "proposal_0001",
+                "version": 1
+              }
+            }
+          }
+        ],
+        "observations": [
+          {
+            "channel": "initial",
+            "id": "observation_0002",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "clerkStock": true,
+              "product": {
+                "label": "Sealed drink",
+                "priceMinor": 300,
+                "productId": "subject_0001",
+                "unitId": "unit_0001"
+              },
+              "provenance": "scenario_catalog_listing"
+            },
+            "roots": [
+              {
+                "id": "event_0001",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "event_0001",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "hearing",
+            "id": "observation_0003",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "communication": {
+                "act": "propose_exchange",
+                "content": {
+                  "kind": "proposal",
+                  "text": "Offers Pay 300 minor units in exchange for Give Sealed drink (unit_0001)."
+                },
+                "family": "Offer",
+                "framing": [
+                  {
+                    "kind": "scope_limit",
+                    "text": "States the selected scope firmly and without adding unrelated demands."
+                  }
+                ],
+                "prominence": "measured",
+                "recipientIds": [
+                  "actor_0002"
+                ],
+                "scope": {
+                  "kind": "subject",
+                  "subjectId": "subject_0001"
+                },
+                "senderId": "actor_0001",
+                "subjectIds": [
+                  "subject_0001"
+                ],
+                "targetId": "subject_0001",
+                "terms": {
+                  "exchange": [
+                    {
+                      "act": "Pay",
+                      "amountMinor": 300
+                    },
+                    {
+                      "act": "Give",
+                      "productId": "subject_0001",
+                      "unitId": "unit_0001"
+                    }
+                  ],
+                  "proposalId": "proposal_0001",
+                  "version": 1
+                }
+              }
+            },
+            "roots": [
+              {
+                "id": "message_0002",
+                "kind": "message"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "message_0002",
+              "kind": "message"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0006",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "transaction": {
+                "agreementEventId": "event_0003",
+                "amountMinor": 300,
+                "buyerId": "actor_0001",
+                "kind": "payment",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0004",
+                "kind": "event"
+              },
+              {
+                "id": "event_0003",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 4,
+            "source": {
+              "id": "event_0004",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0008",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "transaction": {
+                "kind": "handover_failed",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "reason": "INJECTED_HANDOVER_FAILURE",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0005",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 5,
+            "source": {
+              "id": "event_0005",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_000a",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "transaction": {
+                "buyerId": "actor_0001",
+                "kind": "handover",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0006",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 6,
+            "source": {
+              "id": "event_0006",
+              "kind": "event"
+            }
+          }
+        ],
+        "proposals": [
+          {
+            "acceptanceMessageId": "message_0004",
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "handoverEventId": "event_0006",
+            "id": "proposal_0001",
+            "offerMessageId": "message_0002",
+            "paymentEventId": "event_0004",
+            "productId": "subject_0001",
+            "sellerId": "actor_0002",
+            "status": "fulfilled",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        ],
+        "references": [
+          {
+            "available": true,
+            "label": "Sealed drink",
+            "observationId": "observation_0002",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          }
+        ]
+      }
+    },
+    "privilegedDecisionEvidence": {
+      "actorId": "actor_0002",
+      "proposalId": "proposal_0001",
+      "version": 1,
+      "selected": "Accept",
+      "reason": "The received offer matches the observed list price and the clerk knows the item is available.",
+      "evidenceObservationIds": [
+        "observation_0003",
+        "observation_0002"
+      ],
+      "warmth": {
+        "stored": 0,
+        "nudge": 0,
+        "effective": 0
+      },
+      "tieRule": {
+        "leaning": "even",
+        "order": [
+          "Accept",
+          "Refuse",
+          "Clarify"
+        ],
+        "used": false
+      },
+      "candidates": [
+        {
+          "act": "Accept",
+          "eligible": true,
+          "reason": "The received offer matches the observed list price and the clerk knows the item is available.",
+          "rows": [
+            {
+              "factor": "avoidExtraWork",
+              "weight": 1,
+              "effect": 0,
+              "evidence": "Ordinary exchange adds no ongoing work.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "helpCustomers",
+              "weight": 2,
+              "effect": 1,
+              "evidence": "The received offer states what the customer wants.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 2
+            },
+            {
+              "factor": "keepJob",
+              "weight": 4,
+              "effect": 0,
+              "evidence": "Ordinary exact-price exchange applies no discouraged policy.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "makeMoney",
+              "weight": 3,
+              "effect": 1,
+              "evidence": "Observed list price and available stock support an immediate sale.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 3
+            },
+            {
+              "factor": "goodwill",
+              "weight": 0,
+              "effect": 1,
+              "evidence": "Actor-local warmth and the received outward delivery cues.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003"
+              ],
+              "points": 0
+            }
+          ],
+          "score": 5,
+          "rank": 1
+        },
+        {
+          "act": "Refuse",
+          "eligible": true,
+          "reason": "The clerk may decline the sale.",
+          "rows": [
+            {
+              "factor": "avoidExtraWork",
+              "weight": 1,
+              "effect": 0,
+              "evidence": "Ordinary exchange adds no ongoing work.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "helpCustomers",
+              "weight": 2,
+              "effect": -1,
+              "evidence": "The received offer states what the customer wants.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": -2
+            },
+            {
+              "factor": "keepJob",
+              "weight": 4,
+              "effect": 0,
+              "evidence": "Ordinary exact-price exchange applies no discouraged policy.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "makeMoney",
+              "weight": 3,
+              "effect": -1,
+              "evidence": "Observed list price and available stock support an immediate sale.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": -3
+            },
+            {
+              "factor": "goodwill",
+              "weight": 0,
+              "effect": -1,
+              "evidence": "Actor-local warmth and the received outward delivery cues.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003"
+              ],
+              "points": 0
+            }
+          ],
+          "score": -5,
+          "rank": 2
+        },
+        {
+          "act": "Clarify",
+          "eligible": false,
+          "reason": "The clerk already knows the required product, price and availability.",
+          "rows": [],
+          "score": null,
+          "rank": null
+        }
+      ]
+    },
+    "partialSave": {
+      "bytes": 14116,
+      "revision": 4,
+      "ledger": {
+        "buyerCashMinor": 700,
+        "holderId": "actor_0002",
+        "ownerId": "store_0001",
+        "stock": 1,
+        "tillMinor": 300
+      }
+    },
+    "steps": [
+      {
+        "action": "offer",
+        "commandId": "command_0001",
+        "result": {
+          "status": "rejected",
+          "code": "UNKNOWN_REFERENCE"
+        },
+        "revision": 0,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "offer",
+        "commandId": "command_0002",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0002",
+            "committedRevision": 1,
+            "result": {
+              "eventId": "event_0002",
+              "messageId": "message_0002",
+              "observationId": "observation_0003",
+              "proposalId": "proposal_0001",
+              "type": "offer",
+              "version": 1
+            }
+          }
+        },
+        "revision": 1,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0003",
+        "result": {
+          "status": "rejected",
+          "code": "STALE_PROPOSAL"
+        },
+        "revision": 1,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0004",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0004",
+            "committedRevision": 2,
+            "result": {
+              "eventId": "event_0003",
+              "messageId": "message_0004",
+              "observationId": "observation_0004",
+              "proposalId": "proposal_0001",
+              "type": "agreement",
+              "version": 1
+            }
+          }
+        },
+        "revision": 2,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "pay",
+        "commandId": "command_0005",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0005",
+            "committedRevision": 3,
+            "result": {
+              "eventId": "event_0004",
+              "observationIds": [
+                "observation_0005",
+                "observation_0006"
+              ],
+              "proposalId": "proposal_0001",
+              "type": "payment",
+              "version": 1
+            }
+          }
+        },
+        "revision": 3,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "handover",
+        "commandId": "command_0006",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0006",
+            "committedRevision": 4,
+            "result": {
+              "eventId": "event_0005",
+              "observationIds": [
+                "observation_0007",
+                "observation_0008"
+              ],
+              "paymentEventId": "event_0004",
+              "proposalId": "proposal_0001",
+              "reason": "INJECTED_HANDOVER_FAILURE",
+              "type": "handover_failed",
+              "unitId": "unit_0001",
+              "version": 1
+            }
+          }
+        },
+        "revision": 4,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "pay_replay_after_partial_reload",
+        "commandId": "command_0005",
+        "result": {
+          "status": "replayed",
+          "receipt": {
+            "commandId": "command_0005",
+            "committedRevision": 3,
+            "result": {
+              "eventId": "event_0004",
+              "observationIds": [
+                "observation_0005",
+                "observation_0006"
+              ],
+              "proposalId": "proposal_0001",
+              "type": "payment",
+              "version": 1
+            }
+          }
+        },
+        "revision": 4,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "handover",
+        "commandId": "command_0007",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0007",
+            "committedRevision": 5,
+            "result": {
+              "eventId": "event_0006",
+              "observationIds": [
+                "observation_0009",
+                "observation_000a"
+              ],
+              "paymentEventId": "event_0004",
+              "proposalId": "proposal_0001",
+              "type": "handover",
+              "unitId": "unit_0001",
+              "version": 1
+            }
+          }
+        },
+        "revision": 5,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0001",
+          "ownerId": "actor_0001",
+          "stock": 0,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "handover_replay_after_reload",
+        "commandId": "command_0007",
+        "result": {
+          "status": "replayed",
+          "receipt": {
+            "commandId": "command_0007",
+            "committedRevision": 5,
+            "result": {
+              "eventId": "event_0006",
+              "observationIds": [
+                "observation_0009",
+                "observation_000a"
+              ],
+              "paymentEventId": "event_0004",
+              "proposalId": "proposal_0001",
+              "type": "handover",
+              "unitId": "unit_0001",
+              "version": 1
+            }
+          }
+        },
+        "revision": 5,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0001",
+          "ownerId": "actor_0001",
+          "stock": 0,
+          "tillMinor": 300
+        }
+      }
+    ],
+    "events": [
+      {
+        "commandId": null,
+        "details": {
+          "clerkStock": true,
+          "product": {
+            "label": "Sealed drink",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          },
+          "provenance": "scenario_catalog_listing"
+        },
+        "id": "event_0001",
+        "type": "scenario_observation"
+      },
+      {
+        "commandId": "command_0002",
+        "details": {
+          "messageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0002",
+        "type": "offer"
+      },
+      {
+        "commandId": "command_0004",
+        "details": {
+          "acceptanceMessageId": "message_0004",
+          "offerMessageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0003",
+        "type": "agreement"
+      },
+      {
+        "commandId": "command_0005",
+        "details": {
+          "transaction": {
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "kind": "payment",
+            "proposalId": "proposal_0001",
+            "storeId": "store_0001",
+            "version": 1
+          }
+        },
+        "id": "event_0004",
+        "type": "payment"
+      },
+      {
+        "commandId": "command_0006",
+        "details": {
+          "transaction": {
+            "kind": "handover_failed",
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "reason": "INJECTED_HANDOVER_FAILURE",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        },
+        "id": "event_0005",
+        "type": "handover_failed"
+      },
+      {
+        "id": "event_0006",
+        "type": "handover",
+        "commandId": "command_0007",
+        "details": {
+          "transaction": {
+            "buyerId": "actor_0001",
+            "kind": "handover",
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "storeId": "store_0001",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        }
+      }
+    ],
+    "judgments": [
+      {
+        "actorId": "actor_0002",
+        "causeObservationIds": [
+          "observation_000a"
+        ],
+        "towardId": "actor_0001",
+        "warmth": 1
+      }
+    ],
+    "journal": [
+      {
+        "command": {
+          "expectedRevision": 0,
+          "id": "command_0002",
+          "kind": "send_message",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "offer",
+            "actorId": "actor_0001",
+            "amountMinor": 300,
+            "productId": "subject_0001",
+            "recipientId": "actor_0002",
+            "salience": "NUANCED",
+            "vibe": "EA"
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0002",
+          "committedRevision": 1,
+          "result": {
+            "eventId": "event_0002",
+            "messageId": "message_0002",
+            "observationId": "observation_0003",
+            "proposalId": "proposal_0001",
+            "type": "offer",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 1,
+          "id": "command_0004",
+          "kind": "send_message",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "respond",
+            "actorId": "actor_0002",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0004",
+          "committedRevision": 2,
+          "result": {
+            "eventId": "event_0003",
+            "messageId": "message_0004",
+            "observationId": "observation_0004",
+            "proposalId": "proposal_0001",
+            "type": "agreement",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 2,
+          "id": "command_0005",
+          "kind": "perform_action",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "pay",
+            "actorId": "actor_0001",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0005",
+          "committedRevision": 3,
+          "result": {
+            "eventId": "event_0004",
+            "observationIds": [
+              "observation_0005",
+              "observation_0006"
+            ],
+            "proposalId": "proposal_0001",
+            "type": "payment",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 3,
+          "id": "command_0006",
+          "kind": "perform_action",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "handover",
+            "actorId": "actor_0002",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0006",
+          "committedRevision": 4,
+          "result": {
+            "eventId": "event_0005",
+            "observationIds": [
+              "observation_0007",
+              "observation_0008"
+            ],
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "reason": "INJECTED_HANDOVER_FAILURE",
+            "type": "handover_failed",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 4,
+          "id": "command_0007",
+          "kind": "perform_action",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "handover",
+            "actorId": "actor_0002",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0007",
+          "committedRevision": 5,
+          "result": {
+            "eventId": "event_0006",
+            "observationIds": [
+              "observation_0009",
+              "observation_000a"
+            ],
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "type": "handover",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        }
+      }
+    ]
+  },
+  "clerkControlled": {
+    "humanId": "actor_0002",
+    "actors": [
+      {
+        "controller": "rules",
+        "id": "actor_0001",
+        "name": "Customer",
+        "role": "customer"
+      },
+      {
+        "controller": "human",
+        "id": "actor_0002",
+        "name": "Clerk",
+        "role": "clerk"
+      }
+    ],
+    "before": {
+      "buyerCashMinor": 1000,
+      "holderId": "actor_0002",
+      "ownerId": "store_0001",
+      "stock": 1,
+      "tillMinor": 0
+    },
+    "after": {
+      "buyerCashMinor": 700,
+      "holderId": "actor_0001",
+      "ownerId": "actor_0001",
+      "stock": 0,
+      "tillMinor": 300
+    },
+    "scope": {
+      "buyer": {
+        "account": {
+          "balanceMinor": 700,
+          "kind": "personal_cash"
+        },
+        "actor": {
+          "controller": "rules",
+          "id": "actor_0001",
+          "name": "Customer",
+          "role": "customer"
+        },
+        "messages": [
+          {
+            "id": "message_0002",
+            "outward": {
+              "act": "propose_exchange",
+              "content": {
+                "kind": "proposal",
+                "text": "Offers Pay 300 minor units in exchange for Give Sealed drink (unit_0001)."
+              },
+              "family": "Offer",
+              "framing": [
+                {
+                  "kind": "scope_limit",
+                  "text": "States the selected scope firmly and without adding unrelated demands."
+                }
+              ],
+              "prominence": "measured",
+              "recipientIds": [
+                "actor_0002"
+              ],
+              "scope": {
+                "kind": "subject",
+                "subjectId": "subject_0001"
+              },
+              "senderId": "actor_0001",
+              "subjectIds": [
+                "subject_0001"
+              ],
+              "targetId": "subject_0001",
+              "terms": {
+                "exchange": [
+                  {
+                    "act": "Pay",
+                    "amountMinor": 300
+                  },
+                  {
+                    "act": "Give",
+                    "productId": "subject_0001",
+                    "unitId": "unit_0001"
+                  }
+                ],
+                "proposalId": "proposal_0001",
+                "version": 1
+              }
+            }
+          }
+        ],
+        "observations": [
+          {
+            "channel": "initial",
+            "id": "observation_0001",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "product": {
+                "label": "Sealed drink",
+                "priceMinor": 300,
+                "productId": "subject_0001",
+                "unitId": "unit_0001"
+              },
+              "provenance": "scenario_catalog_listing"
+            },
+            "roots": [
+              {
+                "id": "event_0001",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "event_0001",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "hearing",
+            "id": "observation_0004",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "communication": {
+                "act": "accept_exchange",
+                "content": {
+                  "kind": "response",
+                  "text": "Accepts proposal proposal_0001, version 1, for 300 minor units and item unit_0001."
+                },
+                "family": "Remark",
+                "framing": [
+                  {
+                    "kind": "scope_limit",
+                    "text": "States the selected scope firmly and without adding unrelated demands."
+                  }
+                ],
+                "prominence": "measured",
+                "recipientIds": [
+                  "actor_0001"
+                ],
+                "scope": {
+                  "kind": "subject",
+                  "subjectId": "subject_0001"
+                },
+                "senderId": "actor_0002",
+                "subjectIds": [
+                  "subject_0001"
+                ],
+                "targetId": "subject_0001",
+                "terms": {
+                  "exchange": [
+                    {
+                      "act": "Pay",
+                      "amountMinor": 300
+                    },
+                    {
+                      "act": "Give",
+                      "productId": "subject_0001",
+                      "unitId": "unit_0001"
+                    }
+                  ],
+                  "proposalId": "proposal_0001",
+                  "version": 1
+                }
+              }
+            },
+            "roots": [
+              {
+                "id": "message_0004",
+                "kind": "message"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 2,
+            "source": {
+              "id": "message_0004",
+              "kind": "message"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0005",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "transaction": {
+                "agreementEventId": "event_0003",
+                "amountMinor": 300,
+                "buyerId": "actor_0001",
+                "kind": "payment",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0004",
+                "kind": "event"
+              },
+              {
+                "id": "event_0003",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 4,
+            "source": {
+              "id": "event_0004",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0007",
+            "observerId": "actor_0001",
+            "receivedDetails": {
+              "transaction": {
+                "buyerId": "actor_0001",
+                "kind": "handover",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0005",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 5,
+            "source": {
+              "id": "event_0005",
+              "kind": "event"
+            }
+          }
+        ],
+        "proposals": [
+          {
+            "acceptanceMessageId": "message_0004",
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "handoverEventId": "event_0005",
+            "id": "proposal_0001",
+            "offerMessageId": "message_0002",
+            "paymentEventId": "event_0004",
+            "productId": "subject_0001",
+            "sellerId": "actor_0002",
+            "status": "fulfilled",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        ],
+        "references": [
+          {
+            "label": "Sealed drink",
+            "observationId": "observation_0001",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          }
+        ]
+      },
+      "clerk": {
+        "account": {
+          "balanceMinor": 300,
+          "kind": "store_till"
+        },
+        "actor": {
+          "controller": "human",
+          "id": "actor_0002",
+          "name": "Clerk",
+          "role": "clerk"
+        },
+        "messages": [
+          {
+            "id": "message_0004",
+            "outward": {
+              "act": "accept_exchange",
+              "content": {
+                "kind": "response",
+                "text": "Accepts proposal proposal_0001, version 1, for 300 minor units and item unit_0001."
+              },
+              "family": "Remark",
+              "framing": [
+                {
+                  "kind": "scope_limit",
+                  "text": "States the selected scope firmly and without adding unrelated demands."
+                }
+              ],
+              "prominence": "measured",
+              "recipientIds": [
+                "actor_0001"
+              ],
+              "scope": {
+                "kind": "subject",
+                "subjectId": "subject_0001"
+              },
+              "senderId": "actor_0002",
+              "subjectIds": [
+                "subject_0001"
+              ],
+              "targetId": "subject_0001",
+              "terms": {
+                "exchange": [
+                  {
+                    "act": "Pay",
+                    "amountMinor": 300
+                  },
+                  {
+                    "act": "Give",
+                    "productId": "subject_0001",
+                    "unitId": "unit_0001"
+                  }
+                ],
+                "proposalId": "proposal_0001",
+                "version": 1
+              }
+            }
+          }
+        ],
+        "observations": [
+          {
+            "channel": "initial",
+            "id": "observation_0002",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "clerkStock": true,
+              "product": {
+                "label": "Sealed drink",
+                "priceMinor": 300,
+                "productId": "subject_0001",
+                "unitId": "unit_0001"
+              },
+              "provenance": "scenario_catalog_listing"
+            },
+            "roots": [
+              {
+                "id": "event_0001",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "event_0001",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "hearing",
+            "id": "observation_0003",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "communication": {
+                "act": "propose_exchange",
+                "content": {
+                  "kind": "proposal",
+                  "text": "Offers Pay 300 minor units in exchange for Give Sealed drink (unit_0001)."
+                },
+                "family": "Offer",
+                "framing": [
+                  {
+                    "kind": "scope_limit",
+                    "text": "States the selected scope firmly and without adding unrelated demands."
+                  }
+                ],
+                "prominence": "measured",
+                "recipientIds": [
+                  "actor_0002"
+                ],
+                "scope": {
+                  "kind": "subject",
+                  "subjectId": "subject_0001"
+                },
+                "senderId": "actor_0001",
+                "subjectIds": [
+                  "subject_0001"
+                ],
+                "targetId": "subject_0001",
+                "terms": {
+                  "exchange": [
+                    {
+                      "act": "Pay",
+                      "amountMinor": 300
+                    },
+                    {
+                      "act": "Give",
+                      "productId": "subject_0001",
+                      "unitId": "unit_0001"
+                    }
+                  ],
+                  "proposalId": "proposal_0001",
+                  "version": 1
+                }
+              }
+            },
+            "roots": [
+              {
+                "id": "message_0002",
+                "kind": "message"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 1,
+            "source": {
+              "id": "message_0002",
+              "kind": "message"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0006",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "transaction": {
+                "agreementEventId": "event_0003",
+                "amountMinor": 300,
+                "buyerId": "actor_0001",
+                "kind": "payment",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0004",
+                "kind": "event"
+              },
+              {
+                "id": "event_0003",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 4,
+            "source": {
+              "id": "event_0004",
+              "kind": "event"
+            }
+          },
+          {
+            "channel": "reading",
+            "id": "observation_0008",
+            "observerId": "actor_0002",
+            "receivedDetails": {
+              "transaction": {
+                "buyerId": "actor_0001",
+                "kind": "handover",
+                "paymentEventId": "event_0004",
+                "proposalId": "proposal_0001",
+                "storeId": "store_0001",
+                "unitId": "unit_0001",
+                "version": 1
+              }
+            },
+            "roots": [
+              {
+                "id": "event_0005",
+                "kind": "event"
+              },
+              {
+                "id": "event_0004",
+                "kind": "event"
+              }
+            ],
+            "schema": "encounter-observation@2",
+            "sequence": 5,
+            "source": {
+              "id": "event_0005",
+              "kind": "event"
+            }
+          }
+        ],
+        "proposals": [
+          {
+            "acceptanceMessageId": "message_0004",
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "handoverEventId": "event_0005",
+            "id": "proposal_0001",
+            "offerMessageId": "message_0002",
+            "paymentEventId": "event_0004",
+            "productId": "subject_0001",
+            "sellerId": "actor_0002",
+            "status": "fulfilled",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        ],
+        "references": [
+          {
+            "available": true,
+            "label": "Sealed drink",
+            "observationId": "observation_0002",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          }
+        ]
+      }
+    },
+    "privilegedDecisionEvidence": {
+      "actorId": "actor_0002",
+      "proposalId": "proposal_0001",
+      "version": 1,
+      "selected": "Accept",
+      "reason": "The received offer matches the observed list price and the clerk knows the item is available.",
+      "evidenceObservationIds": [
+        "observation_0003",
+        "observation_0002"
+      ],
+      "warmth": {
+        "stored": 0,
+        "nudge": 0,
+        "effective": 0
+      },
+      "tieRule": {
+        "leaning": "even",
+        "order": [
+          "Accept",
+          "Refuse",
+          "Clarify"
+        ],
+        "used": false
+      },
+      "candidates": [
+        {
+          "act": "Accept",
+          "eligible": true,
+          "reason": "The received offer matches the observed list price and the clerk knows the item is available.",
+          "rows": [
+            {
+              "factor": "avoidExtraWork",
+              "weight": 1,
+              "effect": 0,
+              "evidence": "Ordinary exchange adds no ongoing work.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "helpCustomers",
+              "weight": 2,
+              "effect": 1,
+              "evidence": "The received offer states what the customer wants.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 2
+            },
+            {
+              "factor": "keepJob",
+              "weight": 4,
+              "effect": 0,
+              "evidence": "Ordinary exact-price exchange applies no discouraged policy.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "makeMoney",
+              "weight": 3,
+              "effect": 1,
+              "evidence": "Observed list price and available stock support an immediate sale.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 3
+            },
+            {
+              "factor": "goodwill",
+              "weight": 0,
+              "effect": 1,
+              "evidence": "Actor-local warmth and the received outward delivery cues.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003"
+              ],
+              "points": 0
+            }
+          ],
+          "score": 5,
+          "rank": 1
+        },
+        {
+          "act": "Refuse",
+          "eligible": true,
+          "reason": "The clerk may decline the sale.",
+          "rows": [
+            {
+              "factor": "avoidExtraWork",
+              "weight": 1,
+              "effect": 0,
+              "evidence": "Ordinary exchange adds no ongoing work.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "helpCustomers",
+              "weight": 2,
+              "effect": -1,
+              "evidence": "The received offer states what the customer wants.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": -2
+            },
+            {
+              "factor": "keepJob",
+              "weight": 4,
+              "effect": 0,
+              "evidence": "Ordinary exact-price exchange applies no discouraged policy.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": 0
+            },
+            {
+              "factor": "makeMoney",
+              "weight": 3,
+              "effect": -1,
+              "evidence": "Observed list price and available stock support an immediate sale.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003",
+                "observation_0002"
+              ],
+              "points": -3
+            },
+            {
+              "factor": "goodwill",
+              "weight": 0,
+              "effect": -1,
+              "evidence": "Actor-local warmth and the received outward delivery cues.",
+              "profileId": "store-clerk/default-v0.1",
+              "observationIds": [
+                "observation_0003"
+              ],
+              "points": 0
+            }
+          ],
+          "score": -5,
+          "rank": 2
+        },
+        {
+          "act": "Clarify",
+          "eligible": false,
+          "reason": "The clerk already knows the required product, price and availability.",
+          "rows": [],
+          "score": null,
+          "rank": null
+        }
+      ]
+    },
+    "partialSave": null,
+    "steps": [
+      {
+        "action": "offer",
+        "commandId": "command_0001",
+        "result": {
+          "status": "rejected",
+          "code": "UNKNOWN_REFERENCE"
+        },
+        "revision": 0,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "offer",
+        "commandId": "command_0002",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0002",
+            "committedRevision": 1,
+            "result": {
+              "eventId": "event_0002",
+              "messageId": "message_0002",
+              "observationId": "observation_0003",
+              "proposalId": "proposal_0001",
+              "type": "offer",
+              "version": 1
+            }
+          }
+        },
+        "revision": 1,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "accept",
+        "commandId": "command_0003",
+        "result": {
+          "status": "rejected",
+          "code": "STALE_PROPOSAL"
+        },
+        "revision": 1,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "accept",
+        "commandId": "command_0004",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0004",
+            "committedRevision": 2,
+            "result": {
+              "eventId": "event_0003",
+              "messageId": "message_0004",
+              "observationId": "observation_0004",
+              "proposalId": "proposal_0001",
+              "type": "agreement",
+              "version": 1
+            }
+          }
+        },
+        "revision": 2,
+        "ledger": {
+          "buyerCashMinor": 1000,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 0
+        }
+      },
+      {
+        "action": "pay",
+        "commandId": "command_0005",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0005",
+            "committedRevision": 3,
+            "result": {
+              "eventId": "event_0004",
+              "observationIds": [
+                "observation_0005",
+                "observation_0006"
+              ],
+              "proposalId": "proposal_0001",
+              "type": "payment",
+              "version": 1
+            }
+          }
+        },
+        "revision": 3,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0002",
+          "ownerId": "store_0001",
+          "stock": 1,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "handover",
+        "commandId": "command_0006",
+        "result": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0006",
+            "committedRevision": 4,
+            "result": {
+              "eventId": "event_0005",
+              "observationIds": [
+                "observation_0007",
+                "observation_0008"
+              ],
+              "paymentEventId": "event_0004",
+              "proposalId": "proposal_0001",
+              "type": "handover",
+              "unitId": "unit_0001",
+              "version": 1
+            }
+          }
+        },
+        "revision": 4,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0001",
+          "ownerId": "actor_0001",
+          "stock": 0,
+          "tillMinor": 300
+        }
+      },
+      {
+        "action": "handover_replay_after_reload",
+        "commandId": "command_0006",
+        "result": {
+          "status": "replayed",
+          "receipt": {
+            "commandId": "command_0006",
+            "committedRevision": 4,
+            "result": {
+              "eventId": "event_0005",
+              "observationIds": [
+                "observation_0007",
+                "observation_0008"
+              ],
+              "paymentEventId": "event_0004",
+              "proposalId": "proposal_0001",
+              "type": "handover",
+              "unitId": "unit_0001",
+              "version": 1
+            }
+          }
+        },
+        "revision": 4,
+        "ledger": {
+          "buyerCashMinor": 700,
+          "holderId": "actor_0001",
+          "ownerId": "actor_0001",
+          "stock": 0,
+          "tillMinor": 300
+        }
+      }
+    ],
+    "events": [
+      {
+        "commandId": null,
+        "details": {
+          "clerkStock": true,
+          "product": {
+            "label": "Sealed drink",
+            "priceMinor": 300,
+            "productId": "subject_0001",
+            "unitId": "unit_0001"
+          },
+          "provenance": "scenario_catalog_listing"
+        },
+        "id": "event_0001",
+        "type": "scenario_observation"
+      },
+      {
+        "commandId": "command_0002",
+        "details": {
+          "messageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0002",
+        "type": "offer"
+      },
+      {
+        "commandId": "command_0004",
+        "details": {
+          "acceptanceMessageId": "message_0004",
+          "offerMessageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0003",
+        "type": "agreement"
+      },
+      {
+        "commandId": "command_0005",
+        "details": {
+          "transaction": {
+            "agreementEventId": "event_0003",
+            "amountMinor": 300,
+            "buyerId": "actor_0001",
+            "kind": "payment",
+            "proposalId": "proposal_0001",
+            "storeId": "store_0001",
+            "version": 1
+          }
+        },
+        "id": "event_0004",
+        "type": "payment"
+      },
+      {
+        "id": "event_0005",
+        "type": "handover",
+        "commandId": "command_0006",
+        "details": {
+          "transaction": {
+            "buyerId": "actor_0001",
+            "kind": "handover",
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "storeId": "store_0001",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        }
+      }
+    ],
+    "judgments": [
+      {
+        "actorId": "actor_0002",
+        "causeObservationIds": [
+          "observation_0008"
+        ],
+        "towardId": "actor_0001",
+        "warmth": 1
+      }
+    ],
+    "journal": [
+      {
+        "command": {
+          "expectedRevision": 0,
+          "id": "command_0002",
+          "kind": "send_message",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "offer",
+            "actorId": "actor_0001",
+            "amountMinor": 300,
+            "productId": "subject_0001",
+            "recipientId": "actor_0002",
+            "salience": "NUANCED",
+            "vibe": "EA"
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0002",
+          "committedRevision": 1,
+          "result": {
+            "eventId": "event_0002",
+            "messageId": "message_0002",
+            "observationId": "observation_0003",
+            "proposalId": "proposal_0001",
+            "type": "offer",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 1,
+          "id": "command_0004",
+          "kind": "send_message",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "accept",
+            "actorId": "actor_0002",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0004",
+          "committedRevision": 2,
+          "result": {
+            "eventId": "event_0003",
+            "messageId": "message_0004",
+            "observationId": "observation_0004",
+            "proposalId": "proposal_0001",
+            "type": "agreement",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 2,
+          "id": "command_0005",
+          "kind": "perform_action",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "pay",
+            "actorId": "actor_0001",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0005",
+          "committedRevision": 3,
+          "result": {
+            "eventId": "event_0004",
+            "observationIds": [
+              "observation_0005",
+              "observation_0006"
+            ],
+            "proposalId": "proposal_0001",
+            "type": "payment",
+            "version": 1
+          }
+        }
+      },
+      {
+        "command": {
+          "expectedRevision": 3,
+          "id": "command_0006",
+          "kind": "perform_action",
+          "packageRef": {
+            "digest": "ba2ca29f8e62de6752659328ceebd0a0102f2e6eadc3051ff5972030080595d3",
+            "id": "package_0001",
+            "revision": 1
+          },
+          "payload": {
+            "action": "handover",
+            "actorId": "actor_0002",
+            "reference": {
+              "id": "proposal_0001",
+              "version": 1
+            }
+          },
+          "schema": "encounter-command@2",
+          "sessionId": "run_0001"
+        },
+        "receipt": {
+          "commandId": "command_0006",
+          "committedRevision": 4,
+          "result": {
+            "eventId": "event_0005",
+            "observationIds": [
+              "observation_0007",
+              "observation_0008"
+            ],
+            "paymentEventId": "event_0004",
+            "proposalId": "proposal_0001",
+            "type": "handover",
+            "unitId": "unit_0001",
+            "version": 1
+          }
+        }
+      }
+    ]
+  }
+}

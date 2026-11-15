@@ -1,0 +1,51 @@
+INITIAL WINDOWS EXPORT RUN (TEST SHA-256 a2adceeb6cbf2ff0310b21cf4841248289d038353591d251ba1a746de0dd5fae, WITH ONE EXTRA EOF BLANK LINE)
+Candidate: 27b7f93a40fecccd139007204b3ce04580409dd2
+Node: v24.22.1 (Windows)
+Workdir: clean Git archive export of candidate plus independent test
+Command: node --test tests/independent/headless-purchase.test.mjs
+Exit: 0
+
+✔ two fresh runs produce identical scoped choices, durable records and replay bytes (40.3385ms)
+✔ unreceived catalog entries and authoritative facts stay out of scope and clerk policy (9.8162ms)
+✔ only the addressed actor receives authored cues and exact terms; inspector keeps private intent separate (11.9491ms)
+✔ only exact assent to the newest delivered offer version can create an agreement (24.9464ms)
+✔ assent preserves the ledger; explicit settlement conserves minor units and gives one item once (26.7277ms)
+✔ funds and hidden actual stock bar execution even when informed parties can agree (16.8988ms)
+✔ injected failed handover survives save and exact receipt replay; new retry moves stock only (39.1451ms)
+✔ malformed and inconsistent saves fail atomically; stale commands and copied receipts cannot reapply effects (61.2199ms)
+✔ swapping controller before a comparison preserves identities, scope, eligibility and settlement (57.7385ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1302.1983
+
+EXACT-GIT-BLOB RUN (FINAL TEST EOF FORMATTING)
+Candidate: 27b7f93a40fecccd139007204b3ce04580409dd2
+Node: v24.22.1 (Windows)
+Workdir: fresh LF-preserving Git archive export verified against candidate blobs, plus final independent test
+Export: git -c core.autocrlf=false -c core.eol=lf archive --format=zip -o candidate.zip 27b7f93a40fecccd139007204b3ce04580409dd2
+Test SHA-256: e1928d13faa39f2908db97f5298eef27206f61c5067f89848c2b17982edeb6a7
+Command: node --test tests/independent/headless-purchase.test.mjs
+Exit: 0
+
+✔ two fresh runs produce identical scoped choices, durable records and replay bytes (52.8583ms)
+✔ unreceived catalog entries and authoritative facts stay out of scope and clerk policy (13.4542ms)
+✔ only the addressed actor receives authored cues and exact terms; inspector keeps private intent separate (16.2053ms)
+✔ only exact assent to the newest delivered offer version can create an agreement (29.8613ms)
+✔ assent preserves the ledger; explicit settlement conserves minor units and gives one item once (34.7864ms)
+✔ funds and hidden actual stock bar execution even when informed parties can agree (22.8566ms)
+✔ injected failed handover survives save and exact receipt replay; new retry moves stock only (48.1355ms)
+✔ malformed and inconsistent saves fail atomically; stale commands and copied receipts cannot reapply effects (82.5362ms)
+✔ swapping controller before a comparison preserves identities, scope, eligibility and settlement (73.2673ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1392.9611
