@@ -1,0 +1,67 @@
+{
+  "schema": "first-encounter-lab/headless-purchase-build-inputs@1",
+  "run_id": "2026-11-15-v0-1",
+  "reviewed_lab_baseline": "1278b705302da2b1bbd8b0edcca62d63a66fc866",
+  "reviewed_phase0_report_sha256": "6b997bfe01db9c8090017c0be219ad8780dcf6dd406cb1110dfeb9d1a198dfb7",
+  "canonical_source_lock_sha256": "63936852e774aa8a3ecc59b07d76948a9bf233651c45ac8050549dbcd1caff06",
+  "headless_prompt_sha256": "1744e92f5023586187e35d1751ca20a969c9085b1233a64458f0cad1fab9a36f",
+  "nova_phase0_review_sha256": "af90a3ae2181c4b9c3b447a69d0d38caaf4a8a84a3c020dc7f59eddccf313a3a",
+  "c6_boundary_sha256": "55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2",
+  "design_reference_only": [
+    {
+      "name": "Economy / EA-IE",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a"
+    },
+    {
+      "name": "KeyWrapping",
+      "commit": "22c06dc179e3a0739a5ce1e747d0a46dc114fab5"
+    }
+  ],
+  "scope": "Local Headless Purchase v0.1 only. No producer, ROOM, C6, art, UI, or public release authority.",
+  "selected_runner": "Node.js v24.22.1, built-in test runner, native Windows",
+  "exact_imports": [
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/contracts.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 10930,
+      "sha256": "db7de91d1e53c687b4f0469238d51a9c95e8944ecbfb1388c975536aa4c96b78",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/runtime.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 4545,
+      "sha256": "657d97f16704c973a7696c712a53e9afe55cecd40a4dfdfbbb5e331ef9eecf89",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs",
+      "producer_repository": "fargo161/First-Encounter-Game",
+      "producer_path": "packages/encounter-atlas/src/views.mjs",
+      "producer_commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "bytes": 4955,
+      "sha256": "be8138af95f8a3b5758d08013dd171b581c41db7448c9efa880645b8014b0ab9",
+      "protection": "exact, dependency-closed local import; producer notices preserved"
+    }
+  ],
+  "ownership_by_candidate_path": {
+    "AGENTS.md": "Lead",
+    "communication/purchase-meaning.mjs": "A2",
+    "content/based-cues.json": "A2",
+    "content/personalities.json": "A3",
+    "content/products.json": "A1",
+    "content/roles.json": "A3",
+    "core/purchase.mjs": "A1",
+    "core/scenario.mjs": "A1",
+    "decisions/clerk.mjs": "A3",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/RUN_SCOPE.md": "Lead",
+    "docs/runs/headless-purchase-2026-11-15-v0-1/generate-trace.mjs": "Lead",
+    "tests/unit/communication/purchase-meaning.test.mjs": "A2",
+    "tests/unit/core/purchase.test.mjs": "A1",
+    "tests/unit/decisions/clerk.test.mjs": "A3"
+  }
+}

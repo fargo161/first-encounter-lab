@@ -1,0 +1,20 @@
+{
+  "EA": {
+    "templateId": "template_0011",
+    "cues": [
+      {
+        "kind": "scope_limit",
+        "text": "States the selected scope firmly and without adding unrelated demands."
+      }
+    ]
+  },
+  "SE": {
+    "templateId": "template_0012",
+    "cues": [
+      {
+        "kind": "displayed_concern",
+        "text": "Acknowledges the clerk’s work and communicates supportive concern about a defensible handover."
+      }
+    ]
+  }
+}

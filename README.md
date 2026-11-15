@@ -4,12 +4,12 @@
 
 ```yaml
 project: first-encounter-lab
-status_updated_at: 2026-11-15T00:52:03-05:00
-phase: preflight_review
-active_authorization: documentation_and_preflight_only
-last_reviewed_source_commit: bbed22c4bf4bdad453f7d698a80a36f869320980
+status_updated_at: 2026-11-15T01:20:58-05:00
+phase: headless_purchase_build
+active_authorization: headless_purchase_v0_1_only
+last_reviewed_source_commit: 1278b705302da2b1bbd8b0edcca62d63a66fc866
 latest_preflight: docs/preflight/agent-run-2026-11-15-c6-v2/FIRST_ENCOUNTER_LAB_AGENT_RUN_PREFLIGHT_REPORT.md
-latest_owner_build_authorization: null
+latest_owner_build_authorization: 2026-11-15_scoped_headless_purchase
 c6_contract: approved
 c6_contract_sha256: 55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2
 real_room_candidate: not_delivered
@@ -17,10 +17,11 @@ shared_c6_suite: not_delivered
 claude_browser_baseline: not_available
 standin_status: not_built
 playable_lab_status: not_built
-next_gate: owner_preflight_review
+local_review_branch: codex/headless-purchase-v0_1-2026-11-15
+next_gate: independent_headless_purchase_verification
 ```
 
-Teddy approved M01–M06 and revised C6. Phase 0 delivered the evidence and stops for Teddy and Nova's review.
+Teddy authorized one headless Pay-for-Give purchase. The implementation and independent verification are in progress on a local branch.
 
 ## What this project is
 
@@ -49,11 +50,11 @@ The target is one offline browser file with portable saves. Purchases affect mon
 
 ## Current blockers and next actions
 
-- **Teddy’s build authorization.** Review the proposed headless A1–A3 slice and A7 checks. Implementation requires a separate command with the exact revision, paths, inputs and stop point.
+- **Independent headless proof.** The owner authorized this A1–A3 slice and independent A7 checks. The local candidate must pass its purchase, partial failure, retry, replay and parity checks before the run stops for owner review.
 - **Nova’s ROOM candidate and shared C6 suite.** Separate Stage A and Stage B approvals, reviewed wire cases, scene audit, frozen candidate fingerprints, and the unchanged common tests are required for physical integration. Codex A4's future scope is the Lab bridge and one test stand-in.
 - **Claude’s browser evidence.** Run the matched original and overlay baselines before repair and later check each exact repair candidate. A7's independent native-Windows proof and Teddy's playthrough come after an exact Lab artifact exists.
 
-This pass permitted documentation and inspection. Production, stand-in construction, shared-suite authoring, ROOM repair and scene edits remain outside the current scope.
+The current local run permits this purchase implementation and its verification. Stand-in construction, shared-suite authoring, ROOM repair, UI, artwork, scene edits and public implementation publication remain outside scope.
 
 ## How to run and test
 
@@ -61,11 +62,11 @@ There is no runnable Lab in this checkout. The archived ROOM preview contains a 
 
 ## Team and checkpoint
 
-The Lead maintains the handoff and verifies changes. A1 owns state, effects and saves. A2 owns communication, references and exact assent. A3 owns pure decisions and routines. A4 owns the future bridge and official stand-in. A5 owns permitted presentation integration, A6 the scoped UI, and A7 independent checks. The Phase 0 audit assignments are finished. Production roles are inactive. [Future checkpoints](docs/architecture/BUILD_CHECKPOINTS.md)
+The Lead maintains the handoff and verifies changes. A1 owns state, effects and saves. A2 owns communication, references and exact assent. A3 owns pure decisions and routines. A4 owns the future bridge and official stand-in. A5 owns permitted presentation integration, A6 the scoped UI, and A7 independent checks. The Phase 0 audit assignments are finished. A1–A3 implement the scoped purchase. A7 independently verifies the staged candidate after that wave. A4–A6 remain inactive. [Future checkpoints](docs/architecture/BUILD_CHECKPOINTS.md)
 
 ## Recent changes and resume
 
 - Registered the exact revised C6 contract, approval receipt, Step 1 report and source fingerprints.
 - Compared matching historical evidence, reconciled ownership and recorded the independent first-slice proposal.
 
-Resume by reading this file and the [staged v2 runbook](docs/runbooks/FIRST_ENCOUNTER_LAB_CODEX_AGENT_TEAM_RUN_v2.md), then checking the branch, report checksum, reviewed inputs, active owner authorization and unresolved gates. The next action is Teddy and Nova’s review.
+Resume by reading this file and the [staged v2 runbook](docs/runbooks/FIRST_ENCOUNTER_LAB_CODEX_AGENT_TEAM_RUN_v2.md), then checking the branch, report checksum, reviewed inputs, active owner authorization and unresolved gates. The next action is component integration followed by independent A7 verification, then Teddy and Nova’s review.

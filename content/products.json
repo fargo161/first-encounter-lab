@@ -1,0 +1,14 @@
+{
+  "offerable": {
+    "productId": "subject_0001",
+    "unitId": "unit_0001",
+    "label": "Sealed drink",
+    "priceMinor": 300
+  },
+  "unobserved": {
+    "productId": "subject_0002",
+    "unitId": "unit_0002",
+    "label": "Stored supply",
+    "priceMinor": 450
+  }
+}

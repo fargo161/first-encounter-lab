@@ -1,0 +1,13 @@
+{
+  "clerk": {
+    "id": "clerk",
+    "permissions": ["sell_stock", "take_payment"],
+    "priorities": {
+      "keepJob": 4,
+      "makeMoney": 3,
+      "helpCustomers": 2,
+      "avoidExtraWork": 1
+    },
+    "exactListPrice": true
+  }
+}
