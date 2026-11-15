@@ -2,13 +2,15 @@
 phase: headless_v0_3_part_a_stopped_for_review
 authorization: part_a_executed_review_only
 latest_reviewed_source: c77a19c5d2cf294279d1be9208343497bbb3246f
-tested_local_candidate: ef18d2f31f5407405d586b71de9b2fe588602f00
+tested_implementation: ef18d2f31f5407405d586b71de9b2fe588602f00
 test_evidence: "Node v24.22.1, 102 passing (11 new A7), 0 failures or skips"
 latest_report: docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_BUILD_REPORT.md
 c6_status: approved_contract_real_runtime_and_shared_suite_pending
 stand_in_status: unbuilt
 next_owner_gate: teddy_nova_a4_meaning_review
-publication: local_only
+publication: github_review_branch_only
+review_branch: codex/headless-v0-3-part-a-2026-11-15
+part_a_evidence_commit: 4310b3bc8832495fdc2586906f86b2c03eb7750b
 implementation_scope: headless_immediate_purchase_and_part_a_dialogue
 hold_deposit_meaning: draft_pending_owner_approval
 part_b_authorized: false
@@ -40,4 +42,8 @@ Use Node v24.22.1 in the independent Lab checkout.
 
 [Part A build report](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_BUILD_REPORT.md) · [Trace](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_TRACE.json) · [Test output](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_TEST_RESULTS.txt) · [A7 review](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_A7_REVIEW.md)
 
-Work is stopped for Teddy and Nova. The A4 hold meaning is pending approval, and Part B requires a separate explicit authorization.
+## GitHub review workflow
+
+Completed, tested Lab development checkpoints are committed and pushed to their dedicated GitHub review branches under Teddy’s standing approval. Verify the Lab root, remote and test results before pushing, then confirm the remote branch matches the local commit. The review branch is the publication target. Merging into main and starting a new phase are separate owner decisions. [Repository working rules](AGENTS.md) · [Part A review branch](https://github.com/fargo161/first-encounter-lab/tree/codex/headless-v0-3-part-a-2026-11-15)
+
+Part A is stopped for Teddy and Nova’s review. The A4 hold/deposit meaning awaits their approval. Part B is on hold, and ROOM Stage A requires separate authorization.
