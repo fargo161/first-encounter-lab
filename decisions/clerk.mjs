@@ -1,6 +1,6 @@
 import roles from '../content/roles.json' with { type: 'json' };
 import personalities from '../content/personalities.json' with { type: 'json' };
-import { freeze } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
+import { copy, freeze } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 
 export const CLERK_PROFILE = freeze({
   id: 'store-clerk/default-v0.2',
@@ -26,9 +26,20 @@ const TIE_ORDER = freeze({
   obliging: ['Accept', 'Counter', 'Defer', 'Refuse']
 });
 
-function deliveryNudge(cues, prominence, tastes) {
-  const fit = cues.reduce((sum, cue) => sum + (Object.hasOwn(tastes, cue.kind) ? tastes[cue.kind] : 0), 0);
+export function deliveryFit(cues, tastes) {
+  return cues.reduce((sum, cue) => sum + (Object.hasOwn(tastes, cue.kind) ? tastes[cue.kind] : 0), 0);
+}
+
+function nudgeForFit(fit, prominence) {
   return prominence === 'understated' && Math.abs(fit) < 2 ? 0 : Math.sign(fit);
+}
+
+export function passingDeliveryNudge(cues, prominence, tastes) {
+  return nudgeForFit(deliveryFit(cues, tastes), prominence);
+}
+
+function effectiveWarmth(stored, nudge) {
+  return Math.max(-3, Math.min(3, stored + nudge));
 }
 
 function replyDelivery(effectiveWarmth, manner) {
@@ -36,11 +47,14 @@ function replyDelivery(effectiveWarmth, manner) {
   return { vibe: manner[mood], salience: Math.abs(effectiveWarmth) === 3 ? 'OVERT' : 'NUANCED' };
 }
 
-function scoredRows(act, { profile, warmth, evidenceObservationIds, offer, budgetMinor }) {
+function scoredRows(candidate, context) {
+  const { profile, warmth, trust, offer, circumstances, budgetMinor } = context;
+  const { act } = candidate;
   const goodwillEffect = { Accept: 1, Refuse: -1, Counter: 0 }[act];
   const salesEffect = act === 'Refuse' ? -1 : 1;
-  const budgetEffect = Number.isSafeInteger(budgetMinor) && act === 'Accept'
-    ? Math.sign(budgetMinor - offer.amountMinor)
+  const chosenPrice = act === 'Accept' ? offer.amountMinor : candidate.amountMinor;
+  const budgetEffect = Number.isSafeInteger(budgetMinor) && chosenPrice != null
+    ? Math.sign(budgetMinor - chosenPrice)
     : 0;
   const impacts = {
     keepJob: [0, 'This immediate exchange has no discouraged terms.'],
@@ -52,19 +66,61 @@ function scoredRows(act, { profile, warmth, evidenceObservationIds, offer, budge
     stayOnTerms: [goodwillEffect, 'I considered whether these terms give the other person what they asked for.'],
     saveTime: [0, 'An immediate exchange requires no later visit.']
   };
+  const offerSource = { kind: 'received_offer', observationId: offer.observationId };
   const rows = Object.entries(profile.role.priorities).map(([factor, baseWeight]) => {
     const [effect, evidence] = impacts[factor];
-    return {
-      factor, baseWeight, weight: baseWeight + (profile.personality.priorityNudges[factor] ?? 0),
-      effect, evidence, profileId: profile.id, observationIds: [...evidenceObservationIds]
-    };
+    const nudge = profile.personality.priorityNudges[factor] ?? 0;
+    const sources = [
+      { kind: 'role', profileId: profile.id, factor, value: baseWeight },
+      { kind: 'personality', profileId: profile.id, factor, value: nudge },
+      offerSource
+    ];
+    if (factor === 'makeMoney') {
+      sources.push(...circumstances.filter(fact => fact.fact === 'marked_price' || fact.fact === 'observed_availability')
+        .map(fact => fact.source));
+    }
+    if (factor === 'keepBudget' && Number.isSafeInteger(budgetMinor)) {
+      sources.push({ kind: 'authored_want', value: budgetMinor });
+    }
+    return { factor, baseWeight, weight: baseWeight + nudge, effect, evidence, sources };
   });
   rows.push({
     factor: 'goodwill', weight: warmth.effective, effect: goodwillEffect,
     evidence: 'How this exchange would affect the other person matters to me.',
-    profileId: profile.id, observationIds: evidenceObservationIds.slice(0, 1)
+    sources: [
+      { kind: 'stored_warmth', value: warmth.stored, causes: warmth.causes },
+      { kind: 'received_delivery', observationId: offer.observationId, value: warmth.nudge }
+    ]
+  }, {
+    factor: 'risk', weight: 2 - trust.stored, effect: 0,
+    evidence: 'I would have nothing outstanding to rely on after this immediate exchange.',
+    sources: [
+      { kind: 'stored_trust', value: trust.stored, causes: trust.causes },
+      { kind: 'decision_rule', rule: '6.1', basis: 'no_future_performance_exposure' },
+      offerSource
+    ]
   });
   return rows.map(row => ({ ...row, points: row.weight && row.effect ? row.weight * row.effect : 0 }));
+}
+
+function knownCircumstances(view, offer, product) {
+  const facts = [];
+  if (product?.priceMinor != null) facts.push({
+    fact: 'marked_price', value: product.priceMinor,
+    source: { kind: 'observation', observationId: product.observationId, field: 'priceMinor' },
+    effect: 'Apply the responding role’s price policy to its observed marked price.'
+  });
+  if (product?.available != null) facts.push({
+    fact: 'observed_availability', value: product.available,
+    source: { kind: 'observation', observationId: product.availabilityObservationId ?? product.observationId, field: 'available' },
+    effect: product.available ? 'This receipt does not bar an immediate sale.' : 'This receipt bars acceptance under C4.'
+  });
+  if (view.role === 'customer' && Number.isSafeInteger(view.fundsMinor)) facts.push({
+    fact: 'own_cash', value: view.fundsMinor,
+    source: { kind: 'own_account', actorId: view.actorId },
+    effect: view.fundsMinor < offer.amountMinor ? 'Immediate payment would fail under C3.' : 'Own cash covers immediate payment.'
+  });
+  return facts;
 }
 
 function candidate(act, eligible, reason, details = {}) {
@@ -75,15 +131,30 @@ function excluded(act, reason, rule, exclusionClass = 'cannot') {
   return candidate(act, false, reason, { exclusionClass, rule });
 }
 
-function rankScored(candidates, tieOrder, omittedFactor) {
-  const score = entry => entry.score - (entry.rows.find(row => row.factor === omittedFactor)?.points ?? 0);
+function rankScored(candidates, tieOrder, removePoints = () => 0) {
+  const score = entry => entry.score - removePoints(entry);
   return [...candidates].sort((a, b) => score(b) - score(a) || tieOrder.indexOf(a.act) - tieOrder.indexOf(b.act));
 }
 
-function rankedReason(winner, scored, tieOrder, acceptanceBlock) {
+function rankedReason(winner, scored, tieOrder, acceptanceBlock, warmth) {
   if (acceptanceBlock) return { reason: acceptanceBlock.text, reasonRule: acceptanceBlock.rule };
-  const changedWinner = winner.rows.find(row => rankScored(scored, tieOrder, row.factor)[0].act !== winner.act);
+
+  // Try each distinct contribution to effective warmth before testing the full row.
+  const winnerWithout = remove => rankScored(scored, tieOrder, remove)[0].act;
+  const goodwillShift = (entry, alternative) => {
+    const row = entry.rows.find(candidate => candidate.factor === 'goodwill');
+    return (warmth.effective - alternative) * row.effect;
+  };
+  if (winnerWithout(entry => goodwillShift(entry, effectiveWarmth(warmth.stored, 0))) !== winner.act) {
+    return { reason: 'How you put that request affected my decision.', reasonFactor: 'delivery' };
+  }
+  if (winnerWithout(entry => goodwillShift(entry, effectiveWarmth(0, warmth.nudge))) !== winner.act) {
+    return { reason: 'How I feel about dealing with you affected my decision.', reasonFactor: 'warmth' };
+  }
+  const changedWinner = winner.rows.find(row =>
+    winnerWithout(entry => entry.rows.find(candidate => candidate.factor === row.factor)?.points ?? 0) !== winner.act);
   if (changedWinner) return { reason: changedWinner.evidence, reasonFactor: changedWinner.factor };
+
   const originalTerms = scored.find(entry => entry.act === 'Accept') ?? winner;
   const opposing = originalTerms.rows.filter(row => row.points < 0).sort((a, b) => a.points - b.points)[0];
   return opposing
@@ -117,13 +188,19 @@ export function choosePurchaseResponse(view) {
   const { actorId, role, profile = purchaseProfile(role), offer, product, counterCount = 0 } = view;
   const { proposalId, version, productId, amountMinor, observationId, cues = [], prominence = 'measured' } = offer;
   const knownProduct = product?.productId === productId ? product : null;
-  const evidenceObservationIds = [...new Set([observationId, knownProduct?.observationId].filter(Boolean))];
+  const circumstances = knownCircumstances(view, offer, knownProduct);
+  const evidenceObservationIds = [...new Set([observationId, knownProduct?.observationId,
+    knownProduct?.availabilityObservationId].filter(Boolean))];
   const personality = (profile ?? CLERK_PROFILE).personality;
   const { leaning, deliveryTastes, manner } = personality;
   const tieOrder = TIE_ORDER[leaning];
   const storedWarmth = view.warmth ?? 0;
-  const nudge = deliveryNudge(cues, prominence, deliveryTastes);
-  const warmth = { stored: storedWarmth, nudge, effective: Math.max(-3, Math.min(3, storedWarmth + nudge)) };
+  const fit = deliveryFit(cues, deliveryTastes);
+  const nudge = nudgeForFit(fit, prominence);
+  const judgmentCauses = copy(view.judgmentCauses ?? []);
+  const warmth = { stored: storedWarmth, nudge, effective: effectiveWarmth(storedWarmth, nudge),
+    causes: judgmentCauses.filter(cause => cause.judgment === 'warmth') };
+  const trust = { stored: view.trust ?? 0, causes: judgmentCauses.filter(cause => cause.judgment === 'trust') };
 
   const restriction = marketRestriction(role, profile, knownProduct, amountMinor);
   let missing = null;
@@ -157,25 +234,33 @@ export function choosePurchaseResponse(view) {
     excluded('Acknowledge', 'Acknowledge is outside this immediate exchange.', 'C7')
   ];
 
-  const inputs = { profile: profile ?? CLERK_PROFILE, warmth, evidenceObservationIds, offer, budgetMinor: view.budgetMinor };
+  const inputs = { profile: profile ?? CLERK_PROFILE, warmth, trust, offer, circumstances, budgetMinor: view.budgetMinor };
   const eligible = options.filter(entry => entry.eligible);
-  const ranked = eligible.length === 1 ? eligible : rankScored(eligible.map(entry => {
-    const rows = scoredRows(entry.act, inputs);
+  const clarificationOnly = eligible[0].act === 'Clarify';
+  const ranked = clarificationOnly ? eligible : rankScored(eligible.map(entry => {
+    const rows = scoredRows(entry, inputs);
     return { ...entry, rows, score: rows.reduce((sum, row) => sum + row.points, 0) };
   }), tieOrder);
   const winner = ranked[0];
   const tied = ranked.length > 1 && winner.score === ranked[1].score;
   const reason = winner.rows.length
-    ? rankedReason(winner, ranked, tieOrder, restriction)
+    ? rankedReason(winner, ranked, tieOrder, restriction, warmth)
     : { reason: winner.reason, ...(restriction && { reasonRule: restriction.rule }) };
 
   return freeze({
     actorId, proposalId, version, selected: winner.act, ...reason,
-    missing, evidenceObservationIds, warmth, delivery: replyDelivery(warmth.effective, manner),
+    trigger: { proposalId, version, productId, amountMinor, observationId, cues: copy(cues), prominence, fit },
+    profileId: profile?.id ?? null, circumstances, missing, evidenceObservationIds, warmth, trust,
+    delivery: replyDelivery(warmth.effective, manner),
     tieRule: { leaning, order: [...tieOrder], used: tied },
     candidates: [
       ...ranked.map((entry, index) => ({ ...entry, ...(index === 0 && reason), rank: index + 1 })),
-      ...options.filter(entry => !entry.eligible).map(entry => ({ ...entry, rank: null }))
+      ...options.filter(entry => !entry.eligible).map(entry => ({
+        ...entry, rank: null, sources: [
+          { kind: 'decision_rule', rule: entry.rule },
+          ...evidenceObservationIds.map(id => ({ kind: 'observation', observationId: id }))
+        ]
+      }))
     ]
   });
 }

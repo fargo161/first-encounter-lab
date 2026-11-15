@@ -5,9 +5,9 @@ import {
   compileAcceptance, compileClarification, compileCounter, compileOffer, compileRefusal,
   exchangeTerms, expressionReference, observePurchaseMessage,
 } from '../communication/purchase-meaning.mjs';
-import { choosePurchaseResponse, purchaseProfile } from '../decisions/clerk.mjs';
+import { choosePurchaseResponse, deliveryFit, purchaseProfile } from '../decisions/clerk.mjs';
 import {
-  actorView, configureScenario, initialState, nextId, observeEvent, recordEvent, scenarioPackageRef, validateLedger,
+  actorView, configureScenario, initialState, nextId, observeEvent, recordEvent, recordWarmth, scenarioPackageRef, validateState,
 } from './scenario.mjs';
 
 export { BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID } from './scenario.mjs';
@@ -22,14 +22,16 @@ const actions = freeze({
   pay: 'perform_action',
   handover: 'perform_action',
   resolve_handover_failure: 'perform_action',
+  deliver_completion: 'perform_action',
 });
+const HOST_ACTIONS = new Set(['resolve_handover_failure', 'deliver_completion']);
 const ACTOR_MENU_ORDER = freeze(['Accept', 'Refuse', 'Counter', 'Clarify']);
 
 const safeRuleErrors = new Set([
   'AMBIGUOUS_ASSENT', 'STALE_PROPOSAL', 'WRONG_ACTOR', 'WRONG_CONTROLLER', 'WRONG_RECIPIENT',
   'UNKNOWN_REFERENCE', 'UNSUPPORTED_TERMS', 'UNAVAILABLE_EXPRESSION', 'NO_RECEIVING_PATH',
   'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_INELIGIBLE', 'INVALID_TERMS',
-  'INSUFFICIENT_FUNDS', 'ACTION_UNAVAILABLE', 'PRICE_POLICY', 'PAYMENT_REQUIRED', 'ALREADY_PAID', 'ALREADY_FULFILLED',
+  'INSUFFICIENT_FUNDS', 'ACTION_UNAVAILABLE', 'PRICE_POLICY', 'PAYMENT_REQUIRED', 'ALREADY_PAID', 'ALREADY_FULFILLED', 'ALREADY_OBSERVED',
 ]);
 
 function currentProposal(data, reference, actorId) {
@@ -62,6 +64,7 @@ function receiveMessage(data, message) {
   });
   data.messages.push(message);
   data.observations.push(observation);
+  observeEmphaticDelivery(data, observation);
   return observation;
 }
 
@@ -141,6 +144,19 @@ function actorProfile(actor) {
   };
 }
 
+function observeEmphaticDelivery(data, observation) {
+  const received = observation.receivedDetails.communication;
+  if (received.prominence !== 'emphatic') return;
+  const actor = data.actors.find(entry => entry.id === observation.observerId);
+  const direction = Math.sign(deliveryFit(received.framing, actorProfile(actor).personality.deliveryTastes));
+  if (direction === 0) return;
+  const speaker = received.expression.speaker;
+  // This headless run models one continuous conversation per pair.
+  const kind = direction > 0 ? 'liked_emphatic_delivery' : 'disliked_emphatic_delivery';
+  const reason = direction > 0 ? 'I received emphatic delivery I like.' : 'I received emphatic delivery I dislike.';
+  recordWarmth(data, observation, speaker, kind, speaker, direction, reason);
+}
+
 function responseContext(data, proposal, actorId) {
   requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
   const local = actorView(data, actorId);
@@ -154,8 +170,11 @@ function responseContext(data, proposal, actorId) {
   const counterCount = data.events.filter(event => event.type === 'counter' &&
     event.details.proposalId === proposal.id && event.details.actorId === actorId).length;
   const actor = data.actors.find(entry => entry.id === actorId);
+  const judgment = data.judgments.find(entry => entry.actorId === actorId && entry.towardId === offer.expression.speaker);
   const decision = choosePurchaseResponse({
     actorId, role: actor.role, profile: actorProfile(actor), counterCount,
+    warmth: judgment.warmth, trust: judgment.trust, judgmentCauses: judgment.causes,
+    ...(actor.role === 'customer' && { fundsMinor: local.account.balanceMinor }),
     offer: {
       proposalId: proposal.id, version: proposal.version, productId: terms.productId, amountMinor: terms.amountMinor,
       observationId: receipt.id, cues: framing, prominence,
@@ -259,6 +278,38 @@ function observeTransaction(data, event, parties, priorEventId) {
   return parties.map(actorId => observeEvent(data, event, actorId, ['transaction'], roots).id);
 }
 
+function observeCompletion(data, event, actorId) {
+  const { buyerId, sellerId, paymentEventId } = event.details.transaction;
+  const observation = observeEvent(data, event, actorId, ['transaction'], [{ kind: 'event', id: paymentEventId }]);
+  const first = data.events.find(entry => {
+    if (entry.type !== 'handover') return false;
+    const recorded = entry.details.transaction;
+    return (recorded.buyerId === buyerId && recorded.sellerId === sellerId) ||
+      (recorded.buyerId === sellerId && recorded.sellerId === buyerId);
+  });
+  if (first.id === event.id) {
+    const towardId = actorId === sellerId ? buyerId : sellerId;
+    recordWarmth(data, observation, towardId, 'first_purchase', event.id, 1, 'I learned of our first completed purchase.');
+  }
+  return observation.id;
+}
+
+function deliverCompletion(data, command) {
+  const { payload } = command;
+  fields(payload, ['action', 'actorId', 'reference']);
+  const proposal = currentProposal(data, payload.reference, payload.actorId);
+  requireThat(proposal.status === 'fulfilled', 'ACTION_UNAVAILABLE');
+  const completion = data.events.find(event => event.id === proposal.handoverEventId);
+  const alreadyObserved = data.observations.some(observation => observation.observerId === payload.actorId &&
+    observation.source.kind === 'event' && observation.source.id === completion.id);
+  requireThat(!alreadyObserved, 'ALREADY_OBSERVED');
+  const observationId = observeCompletion(data, completion, payload.actorId);
+  const event = recordEvent(data, 'completion_receipt', command.id, { observationId, completionEventId: completion.id });
+  return {
+    type: event.type, eventId: event.id, proposalId: proposal.id, version: proposal.version, observationId,
+  };
+}
+
 function pay(data, command) {
   const { proposal, terms, unit } = settlementContext(data, command.payload, 'buyerId');
   requireThat(!['paid', 'fulfilled'].includes(proposal.status), 'ALREADY_PAID');
@@ -308,17 +359,19 @@ function handover(data, command) {
   unit.ownerId = terms.buyerId;
   unit.holderId = terms.buyerId;
   const event = recordEvent(data, 'handover', command.id, {
-    transaction: { ...transaction, kind: 'handover', buyerId: terms.buyerId, storeId: terms.storeId },
+    transaction: { ...transaction, kind: 'handover', buyerId: terms.buyerId, sellerId: terms.sellerId, storeId: terms.storeId },
   });
   proposal.status = 'fulfilled';
   proposal.handoverEventId = event.id;
-  const observationIds = observeTransaction(data, event, proposal.participants, proposal.paymentEventId);
+  const observationIds = proposal.participants
+    .filter(actorId => actorId === terms.sellerId || data.actors.find(actor => actor.id === actorId).completionObservation === 'immediate')
+    .map(actorId => observeCompletion(data, event, actorId));
   return { type: event.type, eventId: event.id, ...transaction, observationIds };
 }
 
 const dispatch = {
   offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, pay,
-  handover, resolve_handover_failure: handover,
+  handover, resolve_handover_failure: handover, deliver_completion: deliverCompletion,
 };
 
 function start(settings) {
@@ -341,7 +394,7 @@ function submitToRun(run, command, settings) {
       }
     },
     validateStaged(data) {
-      return validateLedger(data, settings);
+      return validateState(data, settings);
     },
   });
   return result.status === 'rejected' ? { ...result, code: domainCode ?? result.code } : result;
@@ -407,7 +460,7 @@ export function createPurchase(options = {}) {
   }
 
   function submitForActor(actorId, commandId, action, args) {
-    if (action === 'resolve_handover_failure' || !Object.hasOwn(actions, action)) {
+    if (HOST_ACTIONS.has(action) || !Object.hasOwn(actions, action)) {
       return { status: 'rejected', code: 'ACTION_UNAVAILABLE' };
     }
     id(commandId, 'command');
@@ -430,6 +483,10 @@ export function createPurchase(options = {}) {
     submit,
     recordHandoverFailure(commandId, evidenceArgs) {
       const submitted = command(commandId, 'resolve_handover_failure', evidenceArgs);
+      return { ...submit(submitted), command: submitted };
+    },
+    deliverCompletionObservation(commandId, args) {
+      const submitted = command(commandId, 'deliver_completion', args);
       return { ...submit(submitted), command: submitted };
     },
     forActor(actorId) {

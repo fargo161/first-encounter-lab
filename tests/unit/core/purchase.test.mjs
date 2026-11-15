@@ -457,3 +457,115 @@ test('actor capabilities cannot inspect private information, resolve a fault, im
   assert.deepEqual(session.forActor(BUYER_ID).submit('command_01a0', 'offer', inputs),
     { status: 'replayed', receipt: offer.receipt });
 });
+
+function toward(session, actorId, towardId) {
+  return session.inspect().data.judgments.find(entry => entry.actorId === actorId && entry.towardId === towardId);
+}
+
+function completedPurchase(submit, overrides = {}) {
+  const ref = reference(offered(submit, overrides));
+  committed(submit('respond', { actorId: CLERK_ID, reference: ref }));
+  settle(submit, ref, overrides.actorId ?? BUYER_ID);
+  return ref;
+}
+
+test('first purchase warmth applies in both directions with distinct receipts from one event and no trust gain', () => {
+  const options = fixtureOptions();
+  options.knowledge.push({ actorId: BUYER_ID, unitId: OTHER_UNIT });
+  options.relationships = [
+    { actorId: BUYER_ID, towardId: CLERK_ID, warmth: 0, trust: -2 },
+    { actorId: CLERK_ID, towardId: BUYER_ID, warmth: -1, trust: 2 },
+  ];
+  const { session, submit } = harness(options);
+  const before = session.inspect().data.judgments;
+  assert.equal(before.length, 12);
+  assert.equal(toward(session, BYSTANDER, CLERK_ID).warmth, 0);
+  completedPurchase(submit);
+  const forward = toward(session, BUYER_ID, CLERK_ID);
+  const reverse = toward(session, CLERK_ID, BUYER_ID);
+  assert.deepEqual([forward.warmth, reverse.warmth, forward.trust, reverse.trust], [1, 0, -2, 2]);
+  assert.equal(forward.causes[0].kind, 'first_purchase');
+  assert.deepEqual(forward.causes[0].source, reverse.causes[0].source);
+  assert.notEqual(forward.causes[0].observationId, reverse.causes[0].observationId);
+  for (const entry of [forward, reverse]) {
+    const eventReceipt = session.view(entry.actorId).observations.find(observation => observation.id === entry.causes[0].observationId);
+    assert.equal(eventReceipt.receivedDetails.transaction.kind, 'handover');
+  }
+  completedPurchase(submit, { productId: OTHER_PRODUCT, amountMinor: 200 });
+  assert.deepEqual(toward(session, BUYER_ID, CLERK_ID), forward);
+  assert.deepEqual(toward(session, CLERK_ID, BUYER_ID), reverse);
+  assert.deepEqual(toward(session, BYSTANDER, CLERK_ID), before.find(entry => entry.actorId === BYSTANDER && entry.towardId === CLERK_ID));
+  const restored = createPurchase();
+  restored.restore(session.save());
+  assert.deepEqual(restored.inspect().data.judgments, session.inspect().data.judgments);
+  assert.throws(() => createPurchase({ ...options, relationships: [{ ...options.relationships[0], trust: -3 }] }), { code: 'INVALID_JUDGMENT' });
+});
+
+test('delayed first-completion receipt earns its original cause once even after a later sale is heard first', () => {
+  const options = fixtureOptions();
+  options.actors[0].completionObservation = 'delayed';
+  options.actors[1].completionObservation = 'delayed';
+  options.knowledge.push({ actorId: BUYER_ID, unitId: OTHER_UNIT });
+  const { session, submit } = harness(options);
+  const first = completedPurchase(submit);
+  const second = completedPurchase(submit, { productId: OTHER_PRODUCT, amountMinor: 200 });
+  assert.equal(session.view(BUYER_ID).proposals.find(entry => entry.id === first.id).status, 'paid');
+  assert.equal(session.view(CLERK_ID).proposals.find(entry => entry.id === first.id).status, 'fulfilled');
+  assert.equal(toward(session, BUYER_ID, CLERK_ID).warmth, 0);
+  assert.equal(toward(session, CLERK_ID, BUYER_ID).warmth, 1);
+  assert.deepEqual(session.forActor(BUYER_ID).submit('command_04a0', 'deliver_completion', { reference: first }), {
+    status: 'rejected', code: 'ACTION_UNAVAILABLE',
+  });
+  const restored = createPurchase();
+  restored.restore(session.save());
+  const later = restored.deliverCompletionObservation('command_04a1', { actorId: BUYER_ID, reference: second });
+  assert.equal(committed(later).type, 'completion_receipt');
+  assert.equal(toward(restored, BUYER_ID, CLERK_ID).warmth, 0);
+  const firstNotice = restored.deliverCompletionObservation('command_04a2', { actorId: BUYER_ID, reference: first });
+  assert.equal(committed(firstNotice).type, 'completion_receipt');
+  assert.equal(restored.view(BUYER_ID).proposals.find(entry => entry.id === first.id).status, 'fulfilled');
+  assert.equal(toward(restored, BUYER_ID, CLERK_ID).warmth, 1);
+  assert.equal(toward(restored, BUYER_ID, CLERK_ID).causes[0].source.id,
+    toward(restored, CLERK_ID, BUYER_ID).causes[0].source.id);
+  assert.deepEqual(restored.submit(firstNotice.command), { status: 'replayed', receipt: firstNotice.receipt });
+  assert.equal(restored.deliverCompletionObservation('command_04a3', { actorId: BUYER_ID, reference: first }).code, 'ALREADY_OBSERVED');
+  assert.equal(toward(restored, BUYER_ID, CLERK_ID).trust, 0);
+  const replayed = createPurchase();
+  replayed.restore(restored.save());
+  assert.equal(replayed.save(), restored.save());
+});
+
+test('emphatic courtesy uses actual recipient cues, respects bounds and cannot be farmed after replay', () => {
+  const options = fixtureOptions();
+  options.actors[0].personality = { deliveryTastes: { scope_limit: -1 } };
+  options.actors[1].personality = { deliveryTastes: { scope_limit: -1 } };
+  options.relationships = [
+    { actorId: CLERK_ID, towardId: BUYER_ID, warmth: 2, trust: 1 },
+    { actorId: BUYER_ID, towardId: CLERK_ID, warmth: -2, trust: -1 },
+  ];
+  const { session, submit } = harness(options);
+  const liked = offered(submit, { salience: 'OVERT' });
+  const offer = reference(liked);
+  const score = session.decide(offer);
+  assert.ok(score.candidates.some(candidate => candidate.rows.some(row => row.factor === 'risk' && row.points === 0)));
+  assert.equal(score.warmth.nudge, 1);
+  const before = toward(session, CLERK_ID, BUYER_ID);
+  assert.equal(before.causes[0].appliedDelta, 0);
+  reference(offered(submit, { vibe: 'EA', salience: 'OVERT' }));
+  reference(offered(submit, { vibe: 'EA', salience: 'OVERT' }));
+  reference(offered(submit, { salience: 'OVERT' }));
+  const after = toward(session, CLERK_ID, BUYER_ID);
+  assert.equal(after.warmth, 1);
+  assert.equal(after.trust, 1);
+  assert.deepEqual(after.causes.map(cause => cause.kind), ['liked_emphatic_delivery', 'disliked_emphatic_delivery']);
+  assert.ok(after.causes.every(cause => cause.source.kind === 'message'));
+  reference(offered(submit, { actorId: CLERK_ID, recipientId: BUYER_ID, vibe: 'EA', salience: 'OVERT' }));
+  const opposite = toward(session, BUYER_ID, CLERK_ID);
+  assert.equal(opposite.warmth, -2);
+  assert.equal(opposite.trust, -1);
+  assert.equal(opposite.causes[0].appliedDelta, 0);
+  const restored = createPurchase();
+  restored.restore(session.save());
+  assert.deepEqual(restored.submit(liked.command), { status: 'replayed', receipt: liked.receipt });
+  assert.deepEqual(restored.inspect().data.judgments, session.inspect().data.judgments);
+});

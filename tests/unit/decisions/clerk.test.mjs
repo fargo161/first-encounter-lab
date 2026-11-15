@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { choosePurchaseResponse, CLERK_PROFILE, CUSTOMER_PROFILE } from '../../../decisions/clerk.mjs';
+import { choosePurchaseResponse, CLERK_PROFILE, CUSTOMER_PROFILE, deliveryFit, passingDeliveryNudge } from '../../../decisions/clerk.mjs';
 
 function clerkView() {
   return {
@@ -123,11 +123,11 @@ test('the appointed leaning breaks an actual score tie and the spoken reason nam
   assert.deepEqual(cautious.candidates.slice(0, 2).map(({ score }) => score), [0, 0]);
   assert.equal(cautious.tieRule.used, true);
   assert.equal(cautious.selected, 'Refuse');
-  assert.equal(cautious.reasonFactor, 'goodwill');
+  assert.equal(cautious.reasonFactor, 'delivery');
   assert.equal(even.tieRule.used, true);
   assert.equal(even.selected, 'Accept');
   assert.equal(even.reasonFactor, 'makeMoney');
-  assert.match(cautious.reason, /affect the other person/);
+  assert.match(cautious.reason, /put that request/);
 });
 
 test('both controllers share role-based Counter terms, cap and explicit unsupported choices', () => {
@@ -203,5 +203,80 @@ test('the same above-list offer can be refused by a known scoring factor with ac
   const result = choosePurchaseResponse(view);
   assert.equal(find(result, 'Accept').eligible, true);
   assert.equal(result.selected, 'Refuse');
-  assert.equal(result.reasonFactor, 'goodwill');
+  assert.equal(result.reasonFactor, 'delivery');
+});
+
+test('the private scorecard accounts for sources, personality weights, directed warmth and zero immediate risk', () => {
+  const view = clerkView();
+  view.trust = 2;
+  view.warmth = 1;
+  view.judgmentCauses = [{
+    judgment: 'warmth', kind: 'first_purchase', causeId: 'purchase-cause',
+    source: { kind: 'event', id: 'event_0004' }, observationId: 'observation_0004', reason: 'first completion',
+    requestedDelta: 1, appliedDelta: 1, before: 0, after: 1
+  }];
+  view.profile = {
+    ...CLERK_PROFILE,
+    personality: { ...CLERK_PROFILE.personality, priorityNudges: { helpCustomers: 1 } }
+  };
+  const card = choosePurchaseResponse(view);
+  const rows = find(card, 'Accept').rows;
+  assert.deepEqual(rows.map(row => [row.factor, row.weight, row.effect, row.points]), [
+    ['keepJob', 4, 0, 0], ['makeMoney', 3, 1, 3], ['helpCustomers', 3, 1, 3],
+    ['avoidExtraWork', 1, 0, 0], ['goodwill', 2, 1, 2], ['risk', 0, 0, 0]
+  ]);
+  assert.equal(find(card, 'Accept').score, 8);
+  assert.equal(card.trigger.observationId, view.offer.observationId);
+  assert.equal(card.trigger.fit, 1);
+  assert.equal(card.warmth.nudge, 1);
+  assert.deepEqual(card.warmth.causes, view.judgmentCauses);
+  assert.notEqual(card.warmth.causes[0], view.judgmentCauses[0]);
+  assert.equal(Object.isFrozen(view.judgmentCauses[0]), false);
+  assert.equal(rows[2].sources.find(source => source.kind === 'personality').value, 1);
+  assert.deepEqual(rows[4].sources.find(source => source.kind === 'stored_warmth').causes, view.judgmentCauses);
+  const distrust = choosePurchaseResponse({ ...view, trust: -2 });
+  const risk = find(distrust, 'Accept').rows.find(row => row.factor === 'risk');
+  assert.equal(risk.weight, 4);
+  assert.equal(risk.effect, 0);
+  assert.equal(risk.points, 0);
+  assert.equal(risk.sources.find(source => source.kind === 'stored_trust').value, -2);
+  assert.equal(find(distrust, 'Accept').score, 8);
+});
+
+test('known circumstances carry their own receipts, and unknown circumstances cannot influence a scorecard', () => {
+  const view = clerkView();
+  const product = { ...view.product, available: false, availabilityObservationId: 'observation_0009' };
+  const result = choosePurchaseResponse({ ...view, product, fundsMinor: 45 });
+  assert.equal(result.selected, 'Refuse');
+  assert.deepEqual(result.circumstances.map(entry => [entry.fact, entry.value, entry.source.observationId]), [
+    ['marked_price', 500, 'observation_0021'], ['observed_availability', false, 'observation_0009']
+  ]);
+  assert.equal(find(result, 'Accept').exclusionClass, 'cannot');
+  assert.equal(find(result, 'Accept').rule, 'C4');
+  assert(find(result, 'Accept').sources.some(source => source.observationId === 'observation_0009'));
+  for (const choice of ['Defer', 'Acknowledge']) {
+    assert.equal(find(result, choice).score, null);
+    assert.equal(find(result, choice).rule, 'C7');
+  }
+  const unknown = choosePurchaseResponse({ ...view, product: { ...view.product, available: null } });
+  assert.equal(unknown.selected, 'Clarify');
+  assert.equal(find(unknown, 'Clarify').score, null);
+  assert(!unknown.circumstances.some(entry => entry.fact === 'observed_availability'));
+  assert.deepEqual(unknown, choosePurchaseResponse({
+    ...view, product: { ...view.product, available: null }, hiddenAvailability: true, hiddenTrust: 2
+  }));
+
+  const customer = choosePurchaseResponse({ ...view, role: 'customer', profile: CUSTOMER_PROFILE, fundsMinor: 45 });
+  const cash = customer.circumstances.find(entry => entry.fact === 'own_cash');
+  assert.equal(cash.source.actorId, view.actorId);
+  assert.match(cash.effect, /payment would fail/);
+});
+
+test('the authored taste distinguishes actual receipt fit from passing prominence', () => {
+  const cues = [{ kind: 'displayed_concern' }, { kind: 'unrecognized' }];
+  const tastes = { displayed_concern: 1 };
+  assert.equal(deliveryFit(cues, tastes), 1);
+  assert.equal(passingDeliveryNudge(cues, 'understated', tastes), 0);
+  assert.equal(passingDeliveryNudge(cues, 'emphatic', tastes), 1);
+  assert.equal(passingDeliveryNudge(cues, 'emphatic', { displayed_concern: -1 }), -1);
 });

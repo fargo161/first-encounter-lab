@@ -33,6 +33,7 @@ const defaults = freeze({
     { id: UNIT_ID, productId: PRODUCT_ID, ownerId: STORE_ID, holderId: CLERK_ID },
     { id: products.unobserved.unitId, productId: UNKNOWN_PRODUCT_ID, ownerId: STORE_ID, holderId: CLERK_ID },
   ],
+  relationships: [],
   knowledge: [
     { actorId: BUYER_ID, unitId: UNIT_ID },
     { actorId: CLERK_ID, unitId: UNIT_ID, available: true },
@@ -74,12 +75,15 @@ export function configureScenario(options = {}) {
   distinct(actors, actor => actor.id);
   requireThat(actors.length > 0 && (humanId === null || actors.some(actor => actor.id === humanId)), 'INVALID_CONTROLLER');
   for (const actor of actors) {
-    fields(actor, ['id', 'name', 'role', 'balanceMinor'], ['personality']);
+    fields(actor, ['id', 'name', 'role', 'balanceMinor'], ['personality', 'completionObservation']);
     id(actor.id, 'actor');
     text(actor.name, 100);
     requireThat(['clerk', 'customer', 'observer'].includes(actor.role), 'INVALID_ROLE');
     integer(actor.balanceMinor);
     if (Object.hasOwn(actor, 'personality')) validatePersonality(actor.personality);
+    if (Object.hasOwn(actor, 'completionObservation')) {
+      requireThat(['immediate', 'delayed'].includes(actor.completionObservation), 'INVALID_GRANT');
+    }
   }
   integer(actors.reduce((total, actor) => total + actor.balanceMinor, store.balanceMinor));
 
@@ -110,6 +114,14 @@ export function configureScenario(options = {}) {
       integer(grant.listedPriceMinor);
       requireThat(grant.listedPriceMinor > 0 && grant.priceKnown !== false, 'INVALID_GRANT');
     }
+  }
+  distinct(settings.relationships, entry => pairKey(entry.actorId, entry.towardId));
+  for (const relationship of settings.relationships) {
+    fields(relationship, ['actorId', 'towardId', 'warmth', 'trust']);
+    requireThat(relationship.actorId !== relationship.towardId &&
+      [relationship.actorId, relationship.towardId].every(actorId => actors.some(actor => actor.id === actorId)), 'INVALID_RELATIONSHIP');
+    validateJudgment(relationship.warmth);
+    validateJudgment(relationship.trust);
   }
   return freeze(settings);
 }
@@ -148,10 +160,30 @@ export function observeEvent(data, event, observerId, keys, roots = []) {
   return observation;
 }
 
+function pairKey(actorId, towardId) {
+  return actorId + '/' + towardId;
+}
+
+function validateJudgment(value) {
+  requireThat(Number.isInteger(value) && value >= -2 && value <= 2, 'INVALID_JUDGMENT');
+}
+
+function initialJudgments(settings) {
+  const authored = new Map(settings.relationships.map(entry => [pairKey(entry.actorId, entry.towardId), entry]));
+  return settings.actors.flatMap(({ id: actorId }) => settings.actors
+    .filter(({ id }) => id !== actorId)
+    .map(({ id: towardId }) => {
+      const { warmth = 0, trust = 0 } = authored.get(pairKey(actorId, towardId)) ?? {};
+      return { actorId, towardId, warmth, trust, causes: [] };
+    }));
+}
+
 export function initialState(settings) {
   const { actors, humanId, store, units, products: catalog, knowledge, currency } = settings;
   const data = {
-    actors: actors.map(({ id, name, role, personality = {} }) => ({ id, name, role, personality: copy(personality), controller: id === humanId ? 'human' : 'rules' })),
+    actors: actors.map(({ id, name, role, personality = {}, completionObservation = 'immediate' }) => ({
+      id, name, role, personality: copy(personality), completionObservation, controller: id === humanId ? 'human' : 'rules',
+    })),
     ledger: {
       currency,
       accounts: [...actors.map(({ id, balanceMinor }) => ({ id, balanceMinor })), copy(store)],
@@ -163,6 +195,7 @@ export function initialState(settings) {
     messages: [],
     proposals: [],
     decisions: [],
+    judgments: initialJudgments(settings),
   };
   for (const grant of knowledge) {
     const unit = units.find(entry => entry.id === grant.unitId);
@@ -208,7 +241,12 @@ export function actorView(data, actorId) {
     .map(message => ({ id: message.id, outward: outwardCommunication(message) }));
   const proposals = data.proposals
     .filter(proposal => proposal.participants.includes(actorId))
-    .map(({ id, version, status, offerMessageId }) => ({ id, version, status, offerMessageId }));
+    .map(({ id, version, status, offerMessageId, handoverEventId }) => ({
+      id, version, offerMessageId,
+      status: status === 'fulfilled' && !observations.some(entry => entry.source.kind === 'event' && entry.source.id === handoverEventId)
+        ? 'paid'
+        : status,
+    }));
   const ownAccount = data.ledger.accounts.find(account => account.id === actorId);
 
   return freeze(copy({
@@ -221,7 +259,21 @@ export function actorView(data, actorId) {
   }));
 }
 
-export function validateLedger(data, settings) {
+export function recordWarmth(data, observation, towardId, kind, causeId, delta, reason) {
+  requireThat(data.observations.includes(observation), 'NO_RECEIVING_PATH');
+  const judgment = data.judgments.find(entry => entry.actorId === observation.observerId && entry.towardId === towardId);
+  requireThat(judgment, 'INVALID_RELATIONSHIP');
+  if (judgment.causes.some(entry => entry.judgment === 'warmth' && entry.kind === kind && entry.causeId === causeId)) return;
+  const before = judgment.warmth;
+  const after = Math.max(-2, Math.min(2, before + delta));
+  judgment.warmth = after;
+  judgment.causes.push({
+    judgment: 'warmth', kind, causeId, source: copy(observation.source), observationId: observation.id,
+    reason, requestedDelta: delta, appliedDelta: after - before, before, after,
+  });
+}
+
+export function validateState(data, settings) {
   const initialBalances = [...settings.actors, settings.store];
   requireThat(data.ledger.currency === settings.currency, 'INVALID_CURRENCY');
   requireThat(data.ledger.accounts.length === initialBalances.length, 'INVALID_ACCOUNTS');
@@ -236,6 +288,17 @@ export function validateLedger(data, settings) {
     requireThat(unit.id === settings.units[index].id && unit.productId === settings.units[index].productId, 'INVALID_UNIT');
     requireThat(unit.ownerId === settings.store.id || data.actors.some(actor => actor.id === unit.ownerId), 'INVALID_OWNER');
     requireThat(data.actors.some(actor => actor.id === unit.holderId), 'INVALID_HOLDER');
+  }
+  requireThat(data.judgments.length === data.actors.length * (data.actors.length - 1), 'INVALID_RELATIONSHIP');
+  distinct(data.judgments, entry => pairKey(entry.actorId, entry.towardId));
+  for (const judgment of data.judgments) {
+    validateJudgment(judgment.warmth);
+    validateJudgment(judgment.trust);
+    distinct(judgment.causes, cause => [cause.judgment, cause.kind, cause.causeId].join('/'));
+    for (const cause of judgment.causes) {
+      const observed = data.observations.find(entry => entry.id === cause.observationId && entry.observerId === judgment.actorId);
+      requireThat(observed && canonicalJson(observed.source) === canonicalJson(cause.source), 'NO_RECEIVING_PATH');
+    }
   }
   return true;
 }
