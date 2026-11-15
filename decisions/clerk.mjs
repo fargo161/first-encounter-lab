@@ -48,21 +48,25 @@ function replyDelivery(effectiveWarmth, manner) {
 }
 
 function scoredRows(candidate, context) {
-  const { profile, warmth, trust, offer, circumstances, budgetMinor } = context;
+  const { profile, warmth, trust, offer, circumstances, budgetMinor, preferredPrice } = context;
   const { act } = candidate;
   const goodwillEffect = { Accept: 1, Refuse: -1, Counter: 0 }[act];
   const salesEffect = act === 'Refuse' ? -1 : 1;
   const chosenPrice = act === 'Accept' ? offer.amountMinor : candidate.amountMinor;
-  const budgetEffect = Number.isSafeInteger(budgetMinor) && chosenPrice != null
-    ? Math.sign(budgetMinor - chosenPrice)
-    : 0;
+  let budgetEffect = 0;
+  if (chosenPrice != null && Number.isSafeInteger(budgetMinor)) {
+    budgetEffect = Math.sign(budgetMinor - chosenPrice);
+  }
+  if (preferredPrice && chosenPrice > preferredPrice.counter) budgetEffect = -1;
   const impacts = {
     keepJob: [0, 'This immediate exchange has no discouraged terms.'],
     makeMoney: [salesEffect, 'An immediate sale would bring money into the store.'],
     helpCustomers: [goodwillEffect, 'I considered whether these terms give the customer what they asked for.'],
     avoidExtraWork: [0, 'An immediate sale leaves me nothing to track later.'],
     getWant: [salesEffect, 'I considered whether these terms get me the item.'],
-    keepBudget: [budgetEffect, 'I considered what the price means for my budget.'],
+    keepBudget: [budgetEffect, preferredPrice
+      ? preferredPrice.text
+      : 'I considered what the price means for my budget.'],
     stayOnTerms: [goodwillEffect, 'I considered whether these terms give the other person what they asked for.'],
     saveTime: [0, 'An immediate exchange requires no later visit.']
   };
@@ -79,8 +83,9 @@ function scoredRows(candidate, context) {
       sources.push(...circumstances.filter(fact => fact.fact === 'marked_price' || fact.fact === 'observed_availability')
         .map(fact => fact.source));
     }
-    if (factor === 'keepBudget' && Number.isSafeInteger(budgetMinor)) {
-      sources.push({ kind: 'authored_want', value: budgetMinor });
+    if (factor === 'keepBudget') {
+      if (Number.isSafeInteger(budgetMinor)) sources.push({ kind: 'authored_want', value: budgetMinor });
+      if (preferredPrice) sources.push(preferredPrice.source);
     }
     return { factor, baseWeight, weight: baseWeight + nudge, effect, evidence, sources };
   });
@@ -108,7 +113,9 @@ function knownCircumstances(view, offer, product) {
   if (product?.priceMinor != null) facts.push({
     fact: 'marked_price', value: product.priceMinor,
     source: { kind: 'observation', observationId: product.priceObservationId ?? product.observationId, field: 'priceMinor' },
-    effect: 'Apply the responding role’s price policy to its observed marked price.'
+    effect: view.role === 'customer'
+      ? 'Compare the offer to the observed marked price for the shopper’s insisted term.'
+      : 'Apply the clerk’s price floor to its observed marked price.'
   });
   if (product?.available != null) facts.push({
     fact: 'observed_availability', value: product.available,
@@ -177,10 +184,13 @@ function marketRestriction(role, profile, product, amountMinor) {
   if (role === 'clerk' && profile.role.minimumListPrice && amountMinor < product.priceMinor) {
     return { text: 'I cannot sell below the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
   }
-  if (role === 'customer' && profile.role.maxListPrice && amountMinor > product.priceMinor) {
-    return { text: 'I will not pay above the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
-  }
   return null;
+}
+
+function shopperPricePreference(role, profile, markedPrice, amountMinor) {
+  if (role !== 'customer' || !profile.role.insistedTerms?.atMostObservedListPrice ||
+      !markedPrice || amountMinor <= markedPrice.value) return null;
+  return { counter: markedPrice.value, text: 'I usually pay the marked price.', source: markedPrice.source };
 }
 
 /** Rank from the responding actor's received facts; selecting never delivers or commits an act. */
@@ -203,6 +213,8 @@ export function choosePurchaseResponse(view) {
   const trust = { stored: view.trust ?? 0, causes: judgmentCauses.filter(cause => cause.judgment === 'trust') };
 
   const restriction = marketRestriction(role, profile, knownProduct, amountMinor);
+  const markedPrice = circumstances.find(fact => fact.fact === 'marked_price');
+  const preferredPrice = restriction ? null : shopperPricePreference(role, profile, markedPrice, amountMinor);
   let missing = null;
   if (!restriction) {
     if (knownProduct?.priceMinor == null) missing = 'list_price';
@@ -211,7 +223,8 @@ export function choosePurchaseResponse(view) {
   const needsStock = missing === 'stock';
   const clarification = needsStock ? 'I need to know whether this item is in stock.' : 'I need to know the marked price of this item.';
   const refusal = restriction?.text ?? 'I am passing on this exchange.';
-  const noCounter = counterCount >= 2 || restriction?.counter == null;
+  const counterTerms = preferredPrice ?? restriction;
+  const noCounter = counterCount >= 2 || counterTerms?.counter == null;
   const noCounterReason = counterCount >= 2
     ? 'I have already made two Counters in this negotiation.'
     : 'My role has no different supported terms to propose.';
@@ -231,12 +244,14 @@ export function choosePurchaseResponse(view) {
       ? excluded('Counter', clarification, 'C7')
       : noCounter
         ? excluded('Counter', noCounterReason, counterCount >= 2 ? 'G05' : '4.3')
-        : candidate('Counter', true, restriction.text, { amountMinor: restriction.counter }),
+        : candidate('Counter', true, counterTerms.text, { amountMinor: counterTerms.counter }),
     excluded('Defer', 'Deferred responses are outside this immediate exchange.', 'C7'),
     excluded('Acknowledge', 'Acknowledge is outside this immediate exchange.', 'C7')
   ];
 
-  const inputs = { profile: profile ?? CLERK_PROFILE, warmth, trust, offer, circumstances, budgetMinor: view.budgetMinor };
+  const inputs = {
+    profile: profile ?? CLERK_PROFILE, warmth, trust, offer, circumstances, budgetMinor: view.budgetMinor, preferredPrice
+  };
   const eligible = options.filter(entry => entry.eligible);
   const ranked = missing ? eligible : rankScored(eligible.map(entry => {
     const rows = scoredRows(entry, inputs);

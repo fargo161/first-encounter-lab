@@ -19,6 +19,8 @@
       "stayOnTerms": 2,
       "saveTime": 1
     },
-    "maxListPrice": true
+    "insistedTerms": {
+      "atMostObservedListPrice": true
+    }
   }
 }

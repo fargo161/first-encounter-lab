@@ -142,7 +142,8 @@ test('both controllers share role-based Counter terms, cap and explicit unsuppor
       const capped = choosePurchaseResponse({ ...view, controller, counterCount: 2 });
       assert.equal(find(capped, 'Counter').eligible, false);
       assert.equal(find(capped, 'Counter').rule, 'G05');
-      assert.equal(capped.selected, 'Refuse');
+      assert.equal(find(capped, 'Accept').eligible, role === 'customer');
+      assert.equal(capped.selected, role === 'customer' ? 'Accept' : 'Refuse');
     }
   }
 });
@@ -313,4 +314,53 @@ test('a trusted price report is scored with its exact attributed receipt', () =>
   assert.equal(price.value, 250);
   assert.equal(price.source.observationId, 'observation_0099');
   assert.deepEqual(choosePurchaseResponse(view), result);
+});
+
+test('an observed shopper price preference scores a $3 Counter alongside $4 Accept for either controller', () => {
+  const original = clerkView();
+  const view = {
+    ...original, role: 'customer', profile: CUSTOMER_PROFILE, budgetMinor: 350, trust: 2,
+    offer: { ...original.offer, amountMinor: 400, cues: [] },
+    product: { ...original.product, priceMinor: 300, priceObservationId: 'observation_0022' }
+  };
+  for (const allowRefuseMissing of [false, true]) {
+    const result = choosePurchaseResponse({ ...view, allowRefuseMissing });
+    const accept = find(result, 'Accept');
+    const counter = find(result, 'Counter');
+    const budget = option => option.rows.find(row => row.factor === 'keepBudget');
+    assert.equal(result.selected, 'Counter');
+    assert.equal(result.reasonFactor, 'keepBudget');
+    assert.match(result.reason, /marked price/);
+    assert.equal(accept.eligible, true);
+    assert.equal(find(result, 'Refuse').eligible, true);
+    assert.equal(counter.eligible, true);
+    assert.equal(counter.amountMinor, 300);
+    assert.equal(budget(accept).effect, -1);
+    assert.equal(budget(counter).effect, 1);
+    assert(budget(counter).sources.some(source => source.observationId === 'observation_0022'));
+    assert(budget(counter).sources.some(source => source.kind === 'authored_want' && source.value === 350));
+    assert.equal(counter.rows.find(row => row.factor === 'risk').weight, 0);
+  }
+  assert.equal(find(choosePurchaseResponse({ ...view, budgetMinor: 250 }), 'Counter')
+    .rows.find(row => row.factor === 'keepBudget').effect, -1);
+  assert.equal(find(choosePurchaseResponse({ ...view, offer: { ...view.offer, amountMinor: 300 } }), 'Counter')
+    .eligible, false);
+});
+
+test('an unseen shopper price supports Clarify without creating a secret-price Counter', () => {
+  const original = clerkView();
+  const view = {
+    ...original, role: 'customer', profile: CUSTOMER_PROFILE, budgetMinor: 350,
+    offer: { ...original.offer, amountMinor: 400 },
+    product: { ...original.product, priceMinor: null }
+  };
+  for (const allowRefuseMissing of [false, true]) {
+    const low = choosePurchaseResponse({ ...view, allowRefuseMissing, actualListPrice: 300 });
+    assert.deepEqual(low, choosePurchaseResponse({ ...view, allowRefuseMissing, actualListPrice: 450 }));
+    assert.equal(low.selected, 'Clarify');
+    assert.equal(low.missing, 'list_price');
+    assert.equal(find(low, 'Counter').eligible, false);
+    assert.equal(Object.hasOwn(find(low, 'Counter'), 'amountMinor'), false);
+    assert.equal(find(low, 'Refuse').eligible, allowRefuseMissing);
+  }
 });

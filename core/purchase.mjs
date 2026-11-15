@@ -219,7 +219,10 @@ function responseContext(data, proposal, actorId, context = offerContext(data, p
     actorId, role: actor.role, profile: actorProfile(actor), counterCount,
     allowRefuseMissing: actor.controller === 'human',
     warmth: judgment.warmth, trust: judgment.trust, judgmentCauses: judgment.causes,
-    ...(actor.role === 'customer' && { fundsMinor: local.account.balanceMinor }),
+    ...(actor.role === 'customer' && {
+      fundsMinor: local.account.balanceMinor,
+      budgetMinor: local.shopping?.wants.find(want => want.kind === product?.kind)?.budgetMinor,
+    }),
     offer: {
       proposalId: proposal.id, version: proposal.version, productId: terms.productId, amountMinor: terms.amountMinor,
       observationId: receipt.id, cues: framing, prominence,

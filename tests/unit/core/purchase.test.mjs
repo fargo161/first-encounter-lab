@@ -365,14 +365,16 @@ test('the same menu enforces the two-Counter maximum per actor and chain for bot
         actorId = actorId === BUYER_ID ? CLERK_ID : BUYER_ID;
       }
       assert.equal(actorId, firstResponder);
-      assert.deepEqual(session.forActor(actorId).menu(ref), ['Refuse']);
+      const remaining = actorId === BUYER_ID ? ['Accept', 'Refuse'] : ['Refuse'];
+      assert.deepEqual(session.forActor(actorId).menu(ref), remaining);
       assert.equal(session.decide(ref, actorId).candidates.find(candidate => candidate.act === 'Counter').rule, 'G05');
       const args = { actorId, reference: ref };
       if (actorId === humanId) {
         assert.equal(submit('reply', { ...args, choice: 'Counter' }).code, 'RESPONSE_INELIGIBLE');
         assert.equal(committed(submit('reply', { ...args, choice: 'Refuse' })).type, 'refusal');
       } else {
-        assert.equal(committed(submit('respond', args)).type, 'refusal');
+        const finalResponse = actorId === BUYER_ID ? 'agreement' : 'refusal';
+        assert.equal(committed(submit('respond', args)).type, finalResponse);
       }
       assert.equal(session.inspect().data.events.filter(event => event.type === 'counter').length, 4);
     }
@@ -926,4 +928,112 @@ test('Part A saves replay with their new label and refuse the old v0.2 envelope 
   assert.equal(session.save(), snapshot);
   session.restore(snapshot);
   assert.equal(session.save(), snapshot);
+});
+
+function shopperProfileFixture(humanId) {
+  const options = { ...fixtureOptions(), humanId };
+  options.actors[0].shopping = { clerkId: CLERK_ID, wants: [{ kind: 'drink', budgetMinor: 300 }] };
+  return options;
+}
+
+function clerkOffer(submit, amountMinor) {
+  return offered(submit, { actorId: CLERK_ID, recipientId: BUYER_ID, amountMinor });
+}
+
+test('a human shopper may accept and pay 400 for a known 300 item, despite the scored Counter preference', () => {
+  const { session, submit } = harness(shopperProfileFixture(BUYER_ID));
+  const ref = reference(clerkOffer(submit, 400));
+  const buyer = session.forActor(BUYER_ID);
+  assert.deepEqual(buyer.menu(ref), ['Accept', 'Refuse', 'Counter']);
+  const decision = session.decide(ref, BUYER_ID);
+  assert.equal(decision.selected, 'Counter');
+  assert.equal(decision.candidates.find(entry => entry.act === 'Counter').amountMinor, 300);
+  const buyChoice = decision.candidates.find(entry => entry.act === 'Accept');
+  assert.equal(buyChoice.eligible, true);
+  const budgetRisk = buyChoice.rows.find(row => row.factor === 'keepBudget');
+  assert.equal(budgetRisk.effect, -1);
+  assert.ok(budgetRisk.sources.some(source => source.kind === 'authored_want' && source.value === 300));
+  assert.equal(committed(buyer.submit('command_00b1', 'accept', { reference: ref })).type, 'agreement');
+  const payment = committed(buyer.submit('command_00b2', 'pay', { reference: ref }));
+  assert.equal(payment.type, 'payment');
+  assert.equal(committed(submit('handover', { actorId: CLERK_ID, reference: ref })).type, 'handover');
+  const { events, ledger, proposals } = session.inspect().data;
+  assert.equal(events.find(event => event.id === payment.eventId).details.transaction.amountMinor, 400);
+  assert.deepEqual(ledger.accounts.filter(account => [BUYER_ID, STORE_ID].includes(account.id)), [
+    { id: BUYER_ID, balanceMinor: 600 }, { id: STORE_ID, balanceMinor: 525 },
+  ]);
+  assert.equal(proposals[0].status, 'fulfilled');
+});
+
+test('human and rules shoppers can Counter 400 with a linked 300 version and form exact assent', () => {
+  for (const humanId of [BUYER_ID, CLERK_ID]) {
+    const { session, submit } = harness(shopperProfileFixture(humanId));
+    const original = clerkOffer(submit, 400);
+    const ref = reference(original);
+    const buyer = session.forActor(BUYER_ID);
+    assert.deepEqual(buyer.menu(ref), ['Accept', 'Refuse', 'Counter']);
+    const next = humanId === BUYER_ID
+      ? submit('reply', { actorId: BUYER_ID, reference: ref, choice: 'Counter' })
+      : submit('respond', { actorId: BUYER_ID, reference: ref });
+    const counter = committed(next);
+    assert.equal(counter.type, 'counter');
+    assert.equal(counter.proposalId, ref.id);
+    assert.equal(counter.version, ref.version + 1);
+    const counterExpression = session.view(CLERK_ID).observations.at(-1).receivedDetails.communication.expression;
+    assert.equal(counterExpression.reply.target.expression.id, committed(original).messageId);
+    assert.equal(counterExpression.reply.target.proposalVersion, ref.version);
+    assert.equal(exchangeTerms(counterExpression).amountMinor, 300);
+    assert.equal(submit('respond', { actorId: CLERK_ID, reference: ref }).code, 'STALE_PROPOSAL');
+    const current = { id: counter.proposalId, version: counter.version };
+    const accepted = committed(submit(humanId === CLERK_ID ? 'accept' : 'respond', { actorId: CLERK_ID, reference: current }));
+    assert.equal(accepted.type, 'agreement');
+    const assent = session.view(BUYER_ID).observations.at(-1).receivedDetails.communication.expression;
+    assert.equal(assent.body.target.proposalVersion, current.version);
+    assert.deepEqual(assent.body.target.expression, expressionReference(counterExpression));
+    settle(submit, current);
+    const { events, ledger } = session.inspect().data;
+    assert.equal(events.find(event => event.type === 'payment').details.transaction.amountMinor, 300);
+    assert.equal(ledger.accounts.find(account => account.id === BUYER_ID).balanceMinor, 700);
+  }
+});
+
+test('the shopper never counters an unreceived listing and both controllers can use the attributed Tell', () => {
+  for (const humanId of [BUYER_ID, CLERK_ID]) {
+    const options = shopperProfileFixture(humanId);
+    options.knowledge[0].priceKnown = false;
+    const { session, submit } = harness(options);
+    const ref = reference(clerkOffer(submit, 400));
+    const buyer = session.forActor(BUYER_ID);
+    assert.deepEqual(buyer.menu(ref), humanId === BUYER_ID ? ['Refuse', 'Clarify'] : ['Clarify']);
+    assert.equal(buyer.view().references.find(item => item.unitId === UNIT_ID).priceMinor, undefined);
+    assert.equal(session.decide(ref, BUYER_ID).candidates.find(entry => entry.act === 'Counter').amountMinor, undefined);
+    if (humanId === BUYER_ID) {
+      assert.equal(buyer.submit('command_00b3', 'reply', { reference: ref, choice: 'Counter' }).code, 'RESPONSE_INELIGIBLE');
+    }
+    const ask = humanId === BUYER_ID
+      ? submit('reply', { actorId: BUYER_ID, reference: ref, choice: 'Clarify' })
+      : submit('respond', { actorId: BUYER_ID, reference: ref });
+    const question = questionFor(CLERK_ID, ask, session);
+    const reply = { actorId: CLERK_ID, question };
+    const answer = committed(submit('answer_question', humanId === CLERK_ID ? { ...reply, choice: 'Tell' } : reply));
+    assert.equal(answer.type, 'clarification_told');
+    const known = buyer.view().references.find(item => item.unitId === UNIT_ID);
+    assert.equal(known.priceMinor, 300);
+    assert.equal(known.priceObservationId, answer.observationId);
+    if (humanId === BUYER_ID) assert.ok(buyer.menu(ref).includes('Accept'));
+    else assert.equal(answer.followUp.type, 'counter');
+  }
+});
+
+test('known customer cash still controls settlement after accepting an above-list offer', () => {
+  const options = shopperProfileFixture(BUYER_ID);
+  options.actors[0].balanceMinor = 350;
+  const { session, submit } = harness(options);
+  const ref = reference(clerkOffer(submit, 400));
+  const buyer = session.forActor(BUYER_ID);
+  assert.ok(buyer.menu(ref).includes('Accept'));
+  assert.equal(committed(buyer.submit('command_00b4', 'accept', { reference: ref })).type, 'agreement');
+  const before = session.save();
+  assert.equal(buyer.submit('command_00b5', 'pay', { reference: ref }).code, 'INSUFFICIENT_FUNDS');
+  assert.equal(session.save(), before);
 });
