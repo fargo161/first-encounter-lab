@@ -1,0 +1,7 @@
+* text=auto
+*.md text eol=lf
+*.json text eol=lf
+*.sha256 text eol=lf
+docs/design/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md -text
+docs/design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md -text
+docs/preflight/** -text

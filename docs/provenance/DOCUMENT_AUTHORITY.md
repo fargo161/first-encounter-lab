@@ -1,0 +1,9 @@
+# Document authority
+
+1. Teddy's latest explicit decision governs its named scope. This setup authorizes the new repository and documentary foundation. A separate owner message must name the revision, allowed source changes and candidate choices for production.
+2. The producer's canonical acceptance, native contracts and exact versions govern each subsystem. Stage 12 identifies authority without installing cross-system bindings. Encounter owns gameplay, Atlas owns descriptive projection, ROOM owns spatial metadata, and ZANT owns its presentation assets.
+3. The two [selected interaction and decision documents](../design/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md) and [v0.2 specification](../design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md) are preserved from the pinned checkpoint. Read their historical standing with the [decision register](../decisions/DECISION_REGISTER.md). The same-named loose files and earlier drafts have separate identities.
+4. The [preflight](../preflight/FIRST_ENCOUNTER_LAB_PREFLIGHT_REPORT.md) records bounded reproduced checks, historical claims, conflicts, and recommendations. Its earlier in-principle launch discussion belongs to that audit. Current setup authorization and open approvals control any next action.
+5. The [master design](../../FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md) summarizes the baseline. Proposed contracts, agent paths, and tests are review material. If a later change conflicts with original evidence, record the conflict and the owner decision. Keep exact originals intact.
+
+Design assent, verified bytes, an implemented candidate, independent test evidence and owner acceptance are separate records. Changes to canonical source, permissions, releases, and Unity need explicit scope. Nova/ChatGPT handles ROOM source through Teddy's process. Review [M01–M06](../decisions/OPEN_APPROVALS.md) before any affected production work.

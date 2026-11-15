@@ -1,0 +1,203 @@
+{
+  "report_id": "2026-11-14-lab-pf-952b4",
+  "sources": [
+    {
+      "name": "checkpoint",
+      "path": "C:\\Users\\mcdon\\Downloads\\First_Encounter_Lab_Claude_Checkpoint_2026-11-14.zip",
+      "bytes": 90249473,
+      "sha256": "1fb3644ec2785c96fd866a44003fb1b7a3c73460016b564f10631bdd96b65237",
+      "expected_sha256": "1fb3644ec2785c96fd866a44003fb1b7a3c73460016b564f10631bdd96b65237",
+      "regular_files": 290,
+      "status": "verified and safely extracted",
+      "post_audit_sha256": "1fb3644ec2785c96fd866a44003fb1b7a3c73460016b564f10631bdd96b65237"
+    },
+    {
+      "name": "FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md",
+      "path": "C:\\Users\\mcdon\\Projects\\dungeon-manager\\artifacts\\first-encounter-lab\\preflight\\2026-11-14-lab-pf-952b4\\scratch\\checkpoint\\First_Encounter_Lab_Claude_Checkpoint_2026-11-14\\4_design_documents\\FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md",
+      "member": "First_Encounter_Lab_Claude_Checkpoint_2026-11-14/4_design_documents/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md",
+      "bytes": 19701,
+      "sha256": "2ccf9e66a6f9ba56b8272fba1ea3c8c028ec67530f5b97f8a160f9e77100c4d2",
+      "expected_sha256": "2ccf9e66a6f9ba56b8272fba1ea3c8c028ec67530f5b97f8a160f9e77100c4d2",
+      "loose_path": "C:\\Users\\mcdon\\Downloads\\FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md",
+      "loose_sha256": "5d02b535e1c6c699be8398929928cdcbdac809e351f0bd14147516e01e88415d",
+      "status": "selected verified checkpoint member",
+      "post_audit_sha256": "2ccf9e66a6f9ba56b8272fba1ea3c8c028ec67530f5b97f8a160f9e77100c4d2"
+    },
+    {
+      "name": "FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md",
+      "path": "C:\\Users\\mcdon\\Projects\\dungeon-manager\\artifacts\\first-encounter-lab\\preflight\\2026-11-14-lab-pf-952b4\\scratch\\checkpoint\\First_Encounter_Lab_Claude_Checkpoint_2026-11-14\\4_design_documents\\FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md",
+      "member": "First_Encounter_Lab_Claude_Checkpoint_2026-11-14/4_design_documents/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md",
+      "bytes": 38229,
+      "sha256": "8d34cc75ea59434b4e2499b426c995ef24c24d7db6fa057fcf74f1753d9270c3",
+      "expected_sha256": "8d34cc75ea59434b4e2499b426c995ef24c24d7db6fa057fcf74f1753d9270c3",
+      "loose_path": "C:\\Users\\mcdon\\Downloads\\FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md",
+      "loose_sha256": "ecfb524dd6868609c71b9594f40cc7b9648ba946854663ba6901e1cff8d10081",
+      "status": "selected verified checkpoint member",
+      "post_audit_sha256": "8d34cc75ea59434b4e2499b426c995ef24c24d7db6fa057fcf74f1753d9270c3"
+    },
+    {
+      "name": "FIRST_ENCOUNTER_LAB_CLAUDE_CHECKPOINT_REPORT.md",
+      "path": "C:\\Users\\mcdon\\Projects\\dungeon-manager\\artifacts\\first-encounter-lab\\preflight\\2026-11-14-lab-pf-952b4\\scratch\\checkpoint\\First_Encounter_Lab_Claude_Checkpoint_2026-11-14\\FIRST_ENCOUNTER_LAB_CLAUDE_CHECKPOINT_REPORT.md",
+      "member": "First_Encounter_Lab_Claude_Checkpoint_2026-11-14/FIRST_ENCOUNTER_LAB_CLAUDE_CHECKPOINT_REPORT.md",
+      "bytes": 24161,
+      "sha256": "569c2875e43aeb0065729a64c5d6fe232d9c356a20acc0eecb840d3f73d9d82a",
+      "expected_sha256": "569c2875e43aeb0065729a64c5d6fe232d9c356a20acc0eecb840d3f73d9d82a",
+      "loose_path": "C:\\Users\\mcdon\\Downloads\\FIRST_ENCOUNTER_LAB_CLAUDE_CHECKPOINT_REPORT.md",
+      "loose_sha256": "569c2875e43aeb0065729a64c5d6fe232d9c356a20acc0eecb840d3f73d9d82a",
+      "status": "selected verified checkpoint member",
+      "post_audit_sha256": "569c2875e43aeb0065729a64c5d6fe232d9c356a20acc0eecb840d3f73d9d82a"
+    },
+    {
+      "name": "FIRST_ENCOUNTER_LAB_CODEX_HANDOFF.md",
+      "path": "C:\\Users\\mcdon\\Projects\\dungeon-manager\\artifacts\\first-encounter-lab\\preflight\\2026-11-14-lab-pf-952b4\\scratch\\checkpoint\\First_Encounter_Lab_Claude_Checkpoint_2026-11-14\\FIRST_ENCOUNTER_LAB_CODEX_HANDOFF.md",
+      "member": "First_Encounter_Lab_Claude_Checkpoint_2026-11-14/FIRST_ENCOUNTER_LAB_CODEX_HANDOFF.md",
+      "bytes": 17924,
+      "sha256": "efd8694946c79b7db2f9aa7bcacbc88b82e80c48f956ee16259efa6de1a59c02",
+      "expected_sha256": "efd8694946c79b7db2f9aa7bcacbc88b82e80c48f956ee16259efa6de1a59c02",
+      "loose_path": "C:\\Users\\mcdon\\Downloads\\FIRST_ENCOUNTER_LAB_CODEX_HANDOFF.md",
+      "loose_sha256": "efd8694946c79b7db2f9aa7bcacbc88b82e80c48f956ee16259efa6de1a59c02",
+      "status": "selected verified checkpoint member",
+      "post_audit_sha256": "efd8694946c79b7db2f9aa7bcacbc88b82e80c48f956ee16259efa6de1a59c02"
+    },
+    {
+      "name": "room",
+      "path": "C:\\Users\\mcdon\\Desktop\\gamefuse\\Room_Creator_v0_2_COMBAT_ROOM_v0_1_1.zip",
+      "bytes": 236350873,
+      "sha256": "ba6c18be7daedeadfad80845ad627070ff72c7a9a1cfab0fb5564c437d9c870b",
+      "expected_sha256": "ba6c18be7daedeadfad80845ad627070ff72c7a9a1cfab0fb5564c437d9c870b",
+      "regular_files": 951,
+      "status": "verified and safely extracted",
+      "post_audit_sha256": "ba6c18be7daedeadfad80845ad627070ff72c7a9a1cfab0fb5564c437d9c870b"
+    },
+    {
+      "name": "arcade",
+      "path": "C:\\Users\\mcdon\\Downloads\\Arcade_Cast_Four_Mannequins_v0_12.zip",
+      "bytes": 71121770,
+      "sha256": "af085971ca2e70646f3352caf487cf0af087154aace4a710b51d36bc0261dc0f",
+      "expected_sha256": "af085971ca2e70646f3352caf487cf0af087154aace4a710b51d36bc0261dc0f",
+      "regular_files": 29,
+      "status": "verified and safely extracted",
+      "post_audit_sha256": "af085971ca2e70646f3352caf487cf0af087154aace4a710b51d36bc0261dc0f"
+    },
+    {
+      "name": "goose",
+      "path": "C:\\Users\\mcdon\\Desktop\\gamefuse\\trapstar for real\\characters\\goose\\goose_expression_batch.zip",
+      "bytes": 230594728,
+      "sha256": "ee83fc40c14733d99bef93e0a2b6594b84cc1ab9b4eaa7286413dcf5927bfcf7",
+      "expected_sha256": "ee83fc40c14733d99bef93e0a2b6594b84cc1ab9b4eaa7286413dcf5927bfcf7",
+      "regular_files": 146,
+      "status": "verified and safely extracted",
+      "post_audit_sha256": "ee83fc40c14733d99bef93e0a2b6594b84cc1ab9b4eaa7286413dcf5927bfcf7"
+    },
+    {
+      "name": "face",
+      "path": "C:\\Users\\mcdon\\Downloads\\live_expression_gaze_controller_v0_5_1_independent_gaze_standalone.zip",
+      "bytes": 9280282,
+      "sha256": "6a7d3caba9ab7111694349ab7b4010451c299a4a14878f954c4cc573217b8d33",
+      "expected_sha256": "6a7d3caba9ab7111694349ab7b4010451c299a4a14878f954c4cc573217b8d33",
+      "regular_files": 2,
+      "status": "verified and safely extracted",
+      "post_audit_sha256": "6a7d3caba9ab7111694349ab7b4010451c299a4a14878f954c4cc573217b8d33"
+    },
+    {
+      "name": "FIRST_ENCOUNTER_LAB_CODEX_MULTI_AGENT_MASTER_PROMPT.md",
+      "path": "C:\\Users\\mcdon\\Downloads\\FIRST_ENCOUNTER_LAB_CODEX_MULTI_AGENT_MASTER_PROMPT.md",
+      "bytes": 61673,
+      "sha256": "1ddde4a1d7807ae31f44c5be138ebabac63a528f97922f21e7fa18a199a1bae7",
+      "status": "verified preflight request reference"
+    },
+    {
+      "name": "START_PREFLIGHT.txt",
+      "path": "C:\\Users\\mcdon\\Downloads\\START_PREFLIGHT.txt",
+      "bytes": 1824,
+      "sha256": "013d2be00a0e51a4bd6ccb58b0d21631ab0dd4499cb50d5f70a36c3f95fb703d",
+      "status": "verified preflight request reference"
+    },
+    {
+      "name": "Encounter M3",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc",
+      "commit": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+      "status": "pinned main"
+    },
+    {
+      "name": "Economy and EA-IE",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "status": "accepted bounded references"
+    },
+    {
+      "name": "KeyWrapping design",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc",
+      "commit": "22c06dc179e3a0739a5ce1e747d0a46dc114fab5",
+      "status": "accepted design"
+    },
+    {
+      "name": "Consolidation main",
+      "path": "C:\\Users\\mcdon\\Documents\\GitHub\\First-Encounter-Game",
+      "commit": "2c9a2e4406418ff432ab169ef9565ce3d302dea4",
+      "status": "authority records and identical Atlas tree"
+    },
+    {
+      "name": "TRANSACTIONS_COMMITMENTS.md",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\docs\\design\\keywrapping-substrate\\v0.1\\TRANSACTIONS_COMMITMENTS.md",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "sha256": "26c04efeaf6131d6a0cbf58098c910312ed71e893fa6af740b37d0857e337684",
+      "status": "pinned foundation evidence"
+    },
+    {
+      "name": "EXPRESSIONS_COMPATIBILITY.md",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\docs\\design\\keywrapping-substrate\\v0.1\\EXPRESSIONS_COMPATIBILITY.md",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "sha256": "d6f0250105d8de64dc0385fedef24ad9e20c75bbaf2dca17b4978eadfd78594d",
+      "status": "pinned foundation evidence"
+    },
+    {
+      "name": "FINAL_INVARIANT_REGISTER.md",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\docs\\design\\economy-substrate\\v0.1\\phase-10\\FINAL_INVARIANT_REGISTER.md",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "sha256": "c5b1b2dd3f3c6f57189af292f22b7308ed7aabb9ab9a8ba919fdd0f03a16555c",
+      "status": "pinned foundation evidence"
+    },
+    {
+      "name": "RESIDUAL_DECISION_REGISTER.md",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\docs\\design\\economy-substrate\\v0.1\\phase-10\\RESIDUAL_DECISION_REGISTER.md",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "sha256": "09db46ce709d06c7ebe00e7043974a4849b34305279073970ffd91e3321fa15d",
+      "status": "pinned foundation evidence"
+    },
+    {
+      "name": "ACTION_PREDICATE_MAPPING.md",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\docs\\research\\keywrapping-substrate\\v0.1\\ACTION_PREDICATE_MAPPING.md",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "sha256": "5ad2374b9a851cd82198263243137911bd9da041dc3c2c7d9ded4703beecebd6",
+      "status": "pinned foundation evidence"
+    },
+    {
+      "name": "EA-IE executable reference",
+      "path": "C:\\Users\\mcdon\\Documents\\ChatGPT\\encounter and rc\\packages\\encounter-ie-reference\\0.1.0",
+      "commit": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+      "tree": "89b1dffcdbbdd9cb1c626632e0b48bf6b3106963",
+      "status": "bounded accepted reference, read, not run"
+    },
+    {
+      "name": "ROOM runtime for integration",
+      "path": null,
+      "status": "blocked pending selection and C6 repair authority or approved replacement"
+    },
+    {
+      "name": "Playwright Python",
+      "path": null,
+      "status": "missing from active Python environment; original browser checks unrun"
+    },
+    {
+      "name": "ROOM external furniture library",
+      "path": null,
+      "status": "not needed by boxed store; broader browser suites unrun"
+    },
+    {
+      "name": "Optional DPA donor",
+      "path": null,
+      "status": "deferred; no donor required"
+    }
+  ]
+}
