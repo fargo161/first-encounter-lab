@@ -1,0 +1,982 @@
+{
+  "schema": "first-encounter-lab/headless-part-a-trace@1",
+  "note": "Synthetic scenario-domain receipts. The true catalog price is review evidence. Actor-visible records and outcomes are shown separately.",
+  "told": {
+    "runId": "run_0331",
+    "outcome": "Tell",
+    "initialOfferMinor": 250,
+    "initialBelievedPriceMinor": 250,
+    "authoritativePriceMinor": 300,
+    "answerMenu": [
+      "Tell",
+      "Decline"
+    ],
+    "pendingSave": {
+      "schema": "lab-headless-generalization-save@2",
+      "sha256": "28d6c8c8146fae92b025e5a3f317b270276c26c83a9cd6cde3f0de914603ffe8",
+      "exactQuestion": {
+        "askerId": "actor_0002",
+        "recipientId": "actor_0001",
+        "missing": "list_price",
+        "messageId": "message_0002",
+        "observationId": "observation_0004",
+        "status": "pending"
+      }
+    },
+    "question": {
+      "channel": "hearing",
+      "id": "observation_0004",
+      "observerId": "actor_0001",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "question",
+            "text": "What is the list price? I need to know the marked price of this item."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0001"
+            ],
+            "body": {
+              "act": "Clarify",
+              "actor": "actor_0002",
+              "missing": "list_price",
+              "node": "action",
+              "reason": "I need to know the marked price of this item.",
+              "recipient": "actor_0001",
+              "target": {
+                "expression": {
+                  "digest": "3e009aeacdf94334beff2f10d1363a28ecc0ebe908a850d00037fd296c71e9b1",
+                  "id": "message_0001",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0331"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0003",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "request",
+            "function": "REQUEST",
+            "id": "message_0002",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0331"
+            },
+            "speaker": "actor_0002",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "scope_limit",
+              "text": "States the selected scope firmly and without adding unrelated demands."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0002",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 2,
+      "source": {
+        "id": "message_0002",
+        "kind": "message"
+      }
+    },
+    "answer": {
+      "channel": "hearing",
+      "id": "observation_0005",
+      "observerId": "actor_0002",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "response",
+            "text": "As far as I know, the list price is 250 minor units."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0002"
+            ],
+            "body": {
+              "act": "Tell",
+              "actor": "actor_0001",
+              "fact": {
+                "productId": "subject_0001",
+                "unitId": "unit_0001",
+                "value": 250
+              },
+              "missing": "list_price",
+              "node": "action",
+              "recipient": "actor_0002",
+              "target": {
+                "expression": {
+                  "digest": "fafd0589608625f650393c28e9128100a36053eb77865399877d0f5877e96829",
+                  "id": "message_0002",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0331"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0004",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "currentSelfPerformance",
+            "function": "REMARK",
+            "id": "message_0003",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0331"
+            },
+            "speaker": "actor_0001",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "displayed_concern",
+              "text": "Acknowledges the clerk’s work and communicates supportive concern about a defensible handover."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0003",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 3,
+      "source": {
+        "id": "message_0003",
+        "kind": "message"
+      }
+    },
+    "response": {
+      "channel": "hearing",
+      "id": "observation_0006",
+      "observerId": "actor_0001",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "response",
+            "text": "Accepts proposal proposal_0001, version 1. I accept the immediate exchange on these terms."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0001"
+            ],
+            "body": {
+              "act": "Accept",
+              "actor": "actor_0002",
+              "node": "action",
+              "reason": "I accept the immediate exchange on these terms.",
+              "recipient": "actor_0001",
+              "target": {
+                "expression": {
+                  "digest": "3e009aeacdf94334beff2f10d1363a28ecc0ebe908a850d00037fd296c71e9b1",
+                  "id": "message_0001",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0331"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0003",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "currentSelfPerformance",
+            "function": "REMARK",
+            "id": "message_0004",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0331"
+            },
+            "speaker": "actor_0002",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "scope_limit",
+              "text": "States the selected scope firmly and without adding unrelated demands."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0004",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 4,
+      "source": {
+        "id": "message_0004",
+        "kind": "message"
+      }
+    },
+    "finalProposal": {
+      "id": "proposal_0001",
+      "offerMessageId": "message_0001",
+      "participants": [
+        "actor_0001",
+        "actor_0002"
+      ],
+      "questions": [
+        {
+          "askerId": "actor_0002",
+          "messageId": "message_0002",
+          "missing": "list_price",
+          "observationId": "observation_0004",
+          "recipientId": "actor_0001",
+          "status": "told",
+          "answerMessageId": "message_0003",
+          "answerObservationId": "observation_0005"
+        }
+      ],
+      "status": "agreed",
+      "version": 1,
+      "agreementEventId": "event_0006"
+    },
+    "partyKnowledge": {
+      "actor_0001": {
+        "priceMinor": 250,
+        "priceObservationId": "observation_0001"
+      },
+      "actor_0002": {
+        "priceMinor": 250,
+        "priceObservationId": "observation_0005"
+      }
+    },
+    "ledgerUnchanged": true,
+    "payment": {
+      "status": "rejected",
+      "code": "ACTION_UNAVAILABLE"
+    },
+    "attempts": [
+      {
+        "action": "offer",
+        "commandId": "command_0001",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0001",
+            "committedRevision": 1,
+            "result": {
+              "eventId": "event_0003",
+              "messageId": "message_0001",
+              "observationId": "observation_0003",
+              "proposalId": "proposal_0001",
+              "type": "offer",
+              "version": 1
+            }
+          }
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0002",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0002",
+            "committedRevision": 2,
+            "result": {
+              "eventId": "event_0004",
+              "messageId": "message_0002",
+              "observationId": "observation_0004",
+              "proposalId": "proposal_0001",
+              "type": "clarification",
+              "version": 1
+            }
+          }
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0003",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0004",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0005",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "answer_question",
+        "commandId": "command_0006",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0006",
+            "committedRevision": 3,
+            "result": {
+              "eventId": "event_0005",
+              "followUp": {
+                "eventId": "event_0006",
+                "messageId": "message_0004",
+                "observationId": "observation_0006",
+                "proposalId": "proposal_0001",
+                "type": "agreement",
+                "version": 1
+              },
+              "messageId": "message_0003",
+              "observationId": "observation_0005",
+              "proposalId": "proposal_0001",
+              "type": "clarification_told",
+              "version": 1
+            }
+          }
+        }
+      },
+      {
+        "action": "pay",
+        "commandId": "command_0007",
+        "outcome": {
+          "status": "rejected",
+          "code": "ACTION_UNAVAILABLE"
+        }
+      }
+    ],
+    "committedEffects": [
+      {
+        "commandId": "command_0001",
+        "details": {
+          "messageId": "message_0001",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0003",
+        "type": "offer"
+      },
+      {
+        "commandId": "command_0002",
+        "details": {
+          "actorId": "actor_0002",
+          "causeMessageId": "message_0001",
+          "messageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0004",
+        "type": "clarification"
+      },
+      {
+        "id": "event_0005",
+        "type": "clarification_told",
+        "commandId": "command_0006",
+        "details": {
+          "actorId": "actor_0001",
+          "causeMessageId": "message_0002",
+          "factObservationId": "observation_0001",
+          "messageId": "message_0003",
+          "proposalId": "proposal_0001",
+          "version": 1
+        }
+      },
+      {
+        "id": "event_0006",
+        "type": "agreement",
+        "commandId": "command_0006",
+        "details": {
+          "actorId": "actor_0002",
+          "assent": [
+            {
+              "actorId": "actor_0001",
+              "messageId": "message_0001"
+            },
+            {
+              "actorId": "actor_0002",
+              "messageId": "message_0004"
+            }
+          ],
+          "causeMessageId": "message_0003",
+          "messageId": "message_0004",
+          "proposalId": "proposal_0001",
+          "version": 1
+        }
+      }
+    ],
+    "journal": [
+      {
+        "commandId": "command_0001",
+        "action": "offer",
+        "committedRevision": 1
+      },
+      {
+        "commandId": "command_0002",
+        "action": "respond",
+        "committedRevision": 2
+      },
+      {
+        "commandId": "command_0006",
+        "action": "answer_question",
+        "committedRevision": 3
+      }
+    ]
+  },
+  "declined": {
+    "runId": "run_0332",
+    "outcome": "Decline",
+    "initialOfferMinor": 250,
+    "initialBelievedPriceMinor": 250,
+    "authoritativePriceMinor": 300,
+    "answerMenu": [
+      "Tell",
+      "Decline"
+    ],
+    "pendingSave": {
+      "schema": "lab-headless-generalization-save@2",
+      "sha256": "4519fa92ea55a5ffbfde1ab050bb94b8b172c50b1923e59e7524e92b93be41c2",
+      "exactQuestion": {
+        "askerId": "actor_0002",
+        "recipientId": "actor_0001",
+        "missing": "list_price",
+        "messageId": "message_0002",
+        "observationId": "observation_0004",
+        "status": "pending"
+      }
+    },
+    "question": {
+      "channel": "hearing",
+      "id": "observation_0004",
+      "observerId": "actor_0001",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "question",
+            "text": "What is the list price? I need to know the marked price of this item."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0001"
+            ],
+            "body": {
+              "act": "Clarify",
+              "actor": "actor_0002",
+              "missing": "list_price",
+              "node": "action",
+              "reason": "I need to know the marked price of this item.",
+              "recipient": "actor_0001",
+              "target": {
+                "expression": {
+                  "digest": "c605cc1fd6ccacf32f17f5531a070414425efe454aaee1257bf5c3645b3949e1",
+                  "id": "message_0001",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0332"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0003",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "request",
+            "function": "REQUEST",
+            "id": "message_0002",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0332"
+            },
+            "speaker": "actor_0002",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "scope_limit",
+              "text": "States the selected scope firmly and without adding unrelated demands."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0002",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 2,
+      "source": {
+        "id": "message_0002",
+        "kind": "message"
+      }
+    },
+    "answer": {
+      "channel": "hearing",
+      "id": "observation_0005",
+      "observerId": "actor_0002",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "response",
+            "text": "I decline to answer."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0002"
+            ],
+            "body": {
+              "act": "Decline",
+              "actor": "actor_0001",
+              "missing": "list_price",
+              "node": "action",
+              "reason": "I decline to answer.",
+              "recipient": "actor_0002",
+              "target": {
+                "expression": {
+                  "digest": "821c3bf80be422edd6bf50854096405a66cc8632690dc4f083d5993c35ce2501",
+                  "id": "message_0002",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0332"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0004",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "currentSelfPerformance",
+            "function": "REMARK",
+            "id": "message_0003",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0332"
+            },
+            "speaker": "actor_0001",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "displayed_concern",
+              "text": "Acknowledges the clerk’s work and communicates supportive concern about a defensible handover."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0003",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 3,
+      "source": {
+        "id": "message_0003",
+        "kind": "message"
+      }
+    },
+    "response": {
+      "channel": "hearing",
+      "id": "observation_0006",
+      "observerId": "actor_0001",
+      "receivedDetails": {
+        "communication": {
+          "content": {
+            "kind": "response",
+            "text": "Refuses proposal proposal_0001, version 1. I cannot decide without list_price."
+          },
+          "expression": {
+            "addressees": [
+              "actor_0001"
+            ],
+            "body": {
+              "act": "Refuse",
+              "actor": "actor_0002",
+              "node": "action",
+              "reason": "I cannot decide without list_price.",
+              "recipient": "actor_0001",
+              "target": {
+                "expression": {
+                  "digest": "c605cc1fd6ccacf32f17f5531a070414425efe454aaee1257bf5c3645b3949e1",
+                  "id": "message_0001",
+                  "scope": {
+                    "packageRef": {
+                      "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                      "id": "package_0001",
+                      "revision": 3
+                    },
+                    "producer": "first-encounter-lab",
+                    "runId": "run_0332"
+                  },
+                  "version": 1
+                },
+                "observationId": "observation_0003",
+                "proposalId": "proposal_0001",
+                "proposalVersion": 1
+              }
+            },
+            "force": "currentSelfPerformance",
+            "function": "REMARK",
+            "id": "message_0004",
+            "proposal": {
+              "id": "proposal_0001",
+              "parent": null,
+              "version": 1
+            },
+            "schema": "kw-expression@1",
+            "scope": {
+              "packageRef": {
+                "digest": "22457aed6a08d9ac64654f7b2800d1a2e2b5d63d7a304fde001ac018df24b78d",
+                "id": "package_0001",
+                "revision": 3
+              },
+              "producer": "first-encounter-lab",
+              "runId": "run_0332"
+            },
+            "speaker": "actor_0002",
+            "time": {
+              "stance": "current"
+            },
+            "version": 1
+          },
+          "framing": [
+            {
+              "kind": "scope_limit",
+              "text": "States the selected scope firmly and without adding unrelated demands."
+            }
+          ],
+          "prominence": "measured"
+        }
+      },
+      "roots": [
+        {
+          "id": "message_0004",
+          "kind": "message"
+        }
+      ],
+      "schema": "encounter-observation@2",
+      "sequence": 4,
+      "source": {
+        "id": "message_0004",
+        "kind": "message"
+      }
+    },
+    "finalProposal": {
+      "id": "proposal_0001",
+      "offerMessageId": "message_0001",
+      "participants": [
+        "actor_0001",
+        "actor_0002"
+      ],
+      "questions": [
+        {
+          "askerId": "actor_0002",
+          "messageId": "message_0002",
+          "missing": "list_price",
+          "observationId": "observation_0004",
+          "recipientId": "actor_0001",
+          "status": "declined",
+          "answerMessageId": "message_0003",
+          "answerObservationId": "observation_0005"
+        }
+      ],
+      "status": "refused",
+      "version": 1
+    },
+    "partyKnowledge": {
+      "actor_0001": {
+        "priceMinor": 250,
+        "priceObservationId": "observation_0001"
+      },
+      "actor_0002": {
+        "priceMinor": null,
+        "priceObservationId": "observation_0002"
+      }
+    },
+    "ledgerUnchanged": true,
+    "payment": null,
+    "attempts": [
+      {
+        "action": "offer",
+        "commandId": "command_0001",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0001",
+            "committedRevision": 1,
+            "result": {
+              "eventId": "event_0003",
+              "messageId": "message_0001",
+              "observationId": "observation_0003",
+              "proposalId": "proposal_0001",
+              "type": "offer",
+              "version": 1
+            }
+          }
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0002",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0002",
+            "committedRevision": 2,
+            "result": {
+              "eventId": "event_0004",
+              "messageId": "message_0002",
+              "observationId": "observation_0004",
+              "proposalId": "proposal_0001",
+              "type": "clarification",
+              "version": 1
+            }
+          }
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0003",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0004",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "respond",
+        "commandId": "command_0005",
+        "outcome": {
+          "status": "rejected",
+          "code": "QUESTION_PENDING"
+        }
+      },
+      {
+        "action": "answer_question",
+        "commandId": "command_0006",
+        "outcome": {
+          "status": "committed",
+          "receipt": {
+            "commandId": "command_0006",
+            "committedRevision": 3,
+            "result": {
+              "eventId": "event_0005",
+              "followUp": {
+                "eventId": "event_0006",
+                "messageId": "message_0004",
+                "observationId": "observation_0006",
+                "proposalId": "proposal_0001",
+                "type": "refusal",
+                "version": 1
+              },
+              "messageId": "message_0003",
+              "observationId": "observation_0005",
+              "proposalId": "proposal_0001",
+              "type": "clarification_declined",
+              "version": 1
+            }
+          }
+        }
+      }
+    ],
+    "committedEffects": [
+      {
+        "commandId": "command_0001",
+        "details": {
+          "messageId": "message_0001",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0003",
+        "type": "offer"
+      },
+      {
+        "commandId": "command_0002",
+        "details": {
+          "actorId": "actor_0002",
+          "causeMessageId": "message_0001",
+          "messageId": "message_0002",
+          "proposalId": "proposal_0001",
+          "version": 1
+        },
+        "id": "event_0004",
+        "type": "clarification"
+      },
+      {
+        "id": "event_0005",
+        "type": "clarification_declined",
+        "commandId": "command_0006",
+        "details": {
+          "actorId": "actor_0001",
+          "causeMessageId": "message_0002",
+          "messageId": "message_0003",
+          "proposalId": "proposal_0001",
+          "version": 1
+        }
+      },
+      {
+        "id": "event_0006",
+        "type": "refusal",
+        "commandId": "command_0006",
+        "details": {
+          "actorId": "actor_0002",
+          "causeMessageId": "message_0003",
+          "messageId": "message_0004",
+          "proposalId": "proposal_0001",
+          "version": 1
+        }
+      }
+    ],
+    "journal": [
+      {
+        "commandId": "command_0001",
+        "action": "offer",
+        "committedRevision": 1
+      },
+      {
+        "commandId": "command_0002",
+        "action": "respond",
+        "committedRevision": 2
+      },
+      {
+        "commandId": "command_0006",
+        "action": "answer_question",
+        "committedRevision": 3
+      }
+    ]
+  },
+  "preservedOldSaveProof": {
+    "historicalSchema": "lab-headless-generalization-save@1",
+    "sha256": "c386f433faf55969fcd6a78e220133a925609df97d77453c3be65dee32292aed",
+    "liveRunUnchanged": true
+  }
+}

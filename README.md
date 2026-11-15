@@ -1,13 +1,13 @@
 ```yaml
-phase: headless_v0_3_part_a_A4
-authorization: part_a_A0_through_A4_only
+phase: headless_v0_3_part_a_stopped_for_review
+authorization: part_a_executed_review_only
 latest_reviewed_source: c77a19c5d2cf294279d1be9208343497bbb3246f
-tested_local_candidate: 6c55f2abfbc4691725e96b45592a955bf80d78d8
-test_evidence: "91 tests passed on Node v24.22.1, 0 failures or skips"
-latest_report: docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md
+tested_local_candidate: ef18d2f31f5407405d586b71de9b2fe588602f00
+test_evidence: "Node v24.22.1, 102 passing (11 new A7), 0 failures or skips"
+latest_report: docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_BUILD_REPORT.md
 c6_status: approved_contract_real_runtime_and_shared_suite_pending
 stand_in_status: unbuilt
-next_owner_gate: independent_a7_then_teddy_nova_review
+next_owner_gate: teddy_nova_a4_meaning_review
 publication: local_only
 implementation_scope: headless_immediate_purchase_and_part_a_dialogue
 hold_deposit_meaning: draft_pending_owner_approval
@@ -29,7 +29,7 @@ First Encounter Lab is a Trapstar gameplay tile. Actors keep separate knowledge,
 
 Use Node v24.22.1 in the independent Lab checkout.
 
-    node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs tests/unit/decisions/shopper.test.mjs tests/independent/headless-purchase.test.mjs
+    node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs tests/unit/decisions/shopper.test.mjs tests/independent/headless-purchase.test.mjs tests/independent/headless-part-a.test.mjs
 
 ## Source and scope
 
@@ -38,4 +38,6 @@ Use Node v24.22.1 in the independent Lab checkout.
 - The approved C6 contract, actual ROOM candidate, shared suite, matched browser baseline, official stand-in, UI and art have distinct gates. Claude's matched baseline is unavailable. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
 - The $5 hold and refundable deposit are a worked draft. The step clock, future obligations, holds, deposits and returns await separate authority. [A4 hold draft](docs/architecture/HEADLESS_HOLD_DEPOSIT_EXPRESSION_WORKED_EXAMPLE_v0_3_DRAFT.md)
 
-The current local authorization covers Part A only. The next gate is the remaining scoped checkpoint and independent review.
+[Part A build report](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_BUILD_REPORT.md) · [Trace](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_TRACE.json) · [Test output](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_TEST_RESULTS.txt) · [A7 review](docs/runs/headless-v0-3-part-a-2026-11-15/HEADLESS_PART_A_A7_REVIEW.md)
+
+Work is stopped for Teddy and Nova. The A4 hold meaning is pending approval, and Part B requires a separate explicit authorization.
