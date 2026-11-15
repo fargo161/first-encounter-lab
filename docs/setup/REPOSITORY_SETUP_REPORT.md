@@ -4,15 +4,15 @@
 
 ## A. Result and authorization
 
-The independent local Git repository is ready for review. Its documentation includes the master design, source locks, proposed handoffs, and all six owner decisions. **REMOTE_SETUP_BLOCKED.** The GitHub connector confirmed the account but exposes no repository-creation action. CLI access and the browser fallback could not complete creation. No remote push took place.
+The independent Lab repository is published on GitHub with verified private visibility. The published documentation includes the master design, source locks, proposed handoffs and six pending owner approvals. Teddy and Nova review the setup before any build authorization. [First Encounter Lab on GitHub](https://github.com/fargo161/first-encounter-lab)
 
 ```text
-SETUP_COMPLETE: false (local documentation setup complete, private remote blocked)
+SETUP_COMPLETE: true
 LOCAL_REPO_CREATED: true
-REMOTE_REPO_CREATED: false
-REMOTE_PRIVATE_VERIFIED: false
+REMOTE_REPO_CREATED: true
+REMOTE_PRIVATE_VERIFIED: true
 INITIAL_DOCS_COMMITTED: true
-INITIAL_DOCS_PUSHED: false
+INITIAL_DOCS_PUSHED: true
 
 REPOSITORY_SETUP_AUTHORIZED: true
 GAMEPLAY_BUILD_AUTHORIZED: false
@@ -30,8 +30,9 @@ NEXT_ACTION: STOP_AND_WAIT_FOR_TEDDY_AND_NOVA
 | Coordinating Git identity | `fargo161/First-Encounter-Game`, checkout `codex/economy-substrate-v0.1-accepted-baseline` at `cc8371c3c497edcdcfb8a73ec7da9dad4663847a`. An existing untracked store-household design fixture remained in place. |
 | New standalone local Git root | `C:\Users\mcdon\Projects\first-encounter-lab`, branch `main`. The path was absent before setup, with no ancestor Git marker or reparse points. |
 | Initial documentation commit | `78ad119892e989878bbd3d7e279deff5729bfeb6`. The setup report and final checksum list are recorded in the subsequent setup commit. |
-| Requested GitHub location | `https://github.com/fargo161/first-encounter-lab`, private. |
-| Observed remote | None configured. No repository creation or push succeeded. |
+| GitHub repository | [fargo161/first-encounter-lab](https://github.com/fargo161/first-encounter-lab), verified private. |
+| Local origin | `https://github.com/fargo161/first-encounter-lab.git`. Local `main` tracks `origin/main`. |
+| Initial published `main` | `cbb1c8a23a61ab60f8c80e25c98d37a4ac147eda`, containing both original setup commits. |
 | Prior Lab output inside dungeon-manager | `C:\Users\mcdon\Projects\dungeon-manager\artifacts\first-encounter-lab\preflight\2026-11-14-lab-pf-952b4`. Contains the report, evidence index, manifest, checksum, logs, and scratch ROOM/checkpoint copies. The prior setup chat located the setup pack in Downloads. No separate setup repository or setup deliverables were found under dungeon-manager. |
 
 Setup wrote only staging artifacts and the independent Lab repository. No writes were made to either existing repository or its source. First Encounter Game's HEAD and status were checked before and after. The dungeon-manager HEAD ref was readable at `9e45fc6a9d824fe4fb05aa60de81ab4d4ff30d87`. Its full Git status could not be rerun under this workspace's sandbox. Its preflight outputs were inspected read-only.
@@ -100,14 +101,15 @@ Preserve the Combat Room v0.1.1 original and canonical ROOM v0.14.1 HOLD separat
 | `python -B tools/repo.py doctor` in First Encounter Game | Reported that required Node 24.x was absent from PATH. The Lab documentation validation is independent of that prerequisite. No repository package build or gameplay test was run. |
 | Python documentation audit and checksum manifest | Verified the 15 master sections, M01–M06, G01–G17, all 43 verbatim proof rows with future status, JSON, local links and fragments, and SHA-256 inventory. Historical frozen log links were checked against the original audit folder. |
 | `git ls-tree -r --name-only HEAD`, `git show HEAD:<path>`, `git diff --check`, `git status --porcelain`, `git fsck --full` | Checked documentation/config-only content, committed byte identity, final Git integrity and a clean working tree. Historical inputs were kept byte-exact. |
+| `gh repo view fargo161/first-encounter-lab`, `gh api` branch and tree inspection, `git remote get-url origin` | Verified private visibility and default branch `main`. The published branch matched local HEAD at publication, and its 22 tracked paths matched the local tree, including the master design, setup report, source lock, preflight report and open approvals. |
 
 The setup checksum manifest covers the 20 foundation files. It excludes itself and this report so that report text and proof results do not feed back into their own checksums. Git covers the full tracked tree.
 
-## I. GitHub access and remaining remote work
+## I. GitHub access and publication
 
-The authenticated connector returned `fargo161` and 404 for the target lookup. The connector has no repository-creation endpoint. `gh auth status` reported an invalid default credential, `gh api user --jq .login` could not connect, and `git ls-remote https://github.com/fargo161/first-encounter-lab.git HEAD` could not resolve `github.com`. Computer Use stopped when it could not verify the current Windows browser URL for its policy check.
+The restricted shell blocked GitHub DNS. Outside that restriction, approved network access reached `github.com` and `api.github.com`, and the existing GitHub CLI credential authenticated as `fargo161`. The GitHub connector exposed no repository-creation action. The in-app browser required sign-in.
 
-The remaining steps require working authenticated create and push access for `fargo161`. Recheck existence. If the exact name is available, create a new empty private repository, verify owner and visibility, add its URL as this Lab repo's origin, push only the Lab's `main`, and compare the remote branch SHA to local HEAD. If that exact repository already exists, pause for owner review before writing to it.
+The authenticated CLI returned HTTP 404 for the exact target before creation. It created `fargo161/first-encounter-lab` as a new private repository and verified the owner and visibility before publishing the existing `main` history. GitHub returned the expected commit and matching file inventory. The local working tree was clean after publication. First Encounter Game was accessed read-only. [Verified private repository](https://github.com/fargo161/first-encounter-lab)
 
 ## J. Review and stop
 
