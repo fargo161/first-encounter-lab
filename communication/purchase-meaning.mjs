@@ -10,6 +10,10 @@ export const EXPRESSION_SCHEMA = 'kw-expression@1';
 const PROMINENCE = freeze({ SUBTLE: 'understated', NUANCED: 'measured', OVERT: 'emphatic' });
 const CUES = freeze(copy(authoredCues));
 const CLARIFICATION = freeze({ stock: 'Is the item available?', list_price: 'What is the list price?' });
+export const QUESTION_DECLINE_REASONS = freeze({
+  declined: 'I decline to answer.',
+  missingFact: "I don't have that fact.",
+});
 
 function shape(value, keys, optional = []) {
   requireThat(isRecord(value) && keys.every(key => Object.hasOwn(value, key)) &&
@@ -89,6 +93,15 @@ function validateReason(reason) {
   text(reason, 240);
 }
 
+function validateToldFact(fact, missing) {
+  shape(fact, ['productId', 'unitId', 'value']);
+  id(fact.productId, 'subject');
+  id(fact.unitId, 'unit');
+  const typed = missing === 'list_price' ? Number.isSafeInteger(fact.value) && fact.value > 0 :
+    typeof fact.value === 'boolean';
+  requireThat(typed, 'UNSUPPORTED_TERMS');
+}
+
 /** Validate the complete executable headless subset. Explicit groups cannot be flattened into supported terms. */
 export function validateExpression(expression) {
   canonicalJson(expression);
@@ -130,10 +143,28 @@ export function validateExpression(expression) {
     requireThat(expression.function === 'REQUEST' && expression.force === 'request' &&
       Object.hasOwn(CLARIFICATION, body.missing), 'UNSUPPORTED_TERMS');
   } else {
-    const remarkFields = body.act === 'Refuse' ? [...actionFields, 'reason'] : actionFields;
-    shape(body, remarkFields, body.act === 'Accept' ? ['reason'] : []);
-    requireThat(expression.function === 'REMARK' && expression.force === 'currentSelfPerformance' &&
-      (body.act === 'Accept' || body.act === 'Refuse'), 'UNSUPPORTED_TERMS');
+    requireThat(expression.function === 'REMARK' && expression.force === 'currentSelfPerformance',
+      'UNSUPPORTED_TERMS');
+    switch (body.act) {
+      case 'Tell':
+        shape(body, [...actionFields, 'missing', 'fact']);
+        requireThat(Object.hasOwn(CLARIFICATION, body.missing), 'UNSUPPORTED_TERMS');
+        validateToldFact(body.fact, body.missing);
+        break;
+      case 'Decline':
+        shape(body, [...actionFields, 'missing', 'reason']);
+        requireThat(Object.hasOwn(CLARIFICATION, body.missing) &&
+          Object.values(QUESTION_DECLINE_REASONS).includes(body.reason), 'UNSUPPORTED_TERMS');
+        break;
+      case 'Refuse':
+        shape(body, [...actionFields, 'reason']);
+        break;
+      case 'Accept':
+        shape(body, actionFields, ['reason']);
+        break;
+      default:
+        requireThat(false, 'UNSUPPORTED_TERMS');
+    }
   }
   requireThat(body.node === 'action' && body.actor === expression.speaker &&
     body.recipient === recipient, 'UNSUPPORTED_TERMS');
@@ -235,6 +266,18 @@ export function compileOffer(input) {
   return messageRecord(input, offerExpression(input), input.label);
 }
 
+function validateHearing(message, receipt, speaker, sequence) {
+  requireThat(Boolean(receipt), 'NO_RECEIVING_PATH');
+  validateObservation(receipt);
+  requireThat(receipt.channel === 'hearing' && receipt.observerId === speaker &&
+    receipt.sequence === message.sequence && receipt.sequence < sequence &&
+    receipt.source.kind === 'message' && receipt.source.id === message.id &&
+    receipt.roots.some(root => root.kind === 'message' && root.id === message.id) &&
+    Object.hasOwn(receipt.receivedDetails, 'communication'), 'NO_RECEIVING_PATH');
+  requireThat(canonicalJson(receipt.receivedDetails.communication) === canonicalJson(outwardCommunication(message)),
+    'STALE_PROPOSAL');
+}
+
 function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, receipt, reference }) {
   requireThat(isRecord(reference) && Object.keys(reference).length === 2 &&
     Object.hasOwn(reference, 'id') && Object.hasOwn(reference, 'version'), 'AMBIGUOUS_ASSENT');
@@ -245,15 +288,7 @@ function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, rec
   requireThat(reference.id === proposal.id && reference.version === proposal.version &&
     canonicalJson(expression.scope) === canonicalJson(scope), 'STALE_PROPOSAL');
   requireThat(expression.addressees[0] === speaker && expression.speaker === recipient, 'WRONG_RECIPIENT');
-  requireThat(Boolean(receipt), 'NO_RECEIVING_PATH');
-  validateObservation(receipt);
-  requireThat(receipt.channel === 'hearing' && receipt.observerId === speaker &&
-    receipt.sequence === offer.sequence && receipt.sequence < sequence &&
-    receipt.source.kind === 'message' && receipt.source.id === offer.id &&
-    receipt.roots.some(root => root.kind === 'message' && root.id === offer.id) &&
-    Object.hasOwn(receipt.receivedDetails, 'communication'), 'NO_RECEIVING_PATH');
-  requireThat(canonicalJson(receipt.receivedDetails.communication) === canonicalJson(outwardCommunication(offer)),
-    'STALE_PROPOSAL');
+  validateHearing(offer, receipt, speaker, sequence);
   return expression;
 }
 
@@ -300,6 +335,35 @@ export function compileClarification(input) {
   return compileResponse(input, 'Clarify');
 }
 
+/** The runtime supplies the actual addressed Clarify and the selected speaker's scoped fact. */
+export function compileQuestionAnswer(input) {
+  const { question, receipt, scope, sequence, speaker, recipient, choice, subject, fact, reason } = input;
+  const request = question?.expression;
+  requireThat(request?.body?.act === 'Clarify', 'STALE_PROPOSAL');
+  validateExpression(request);
+  requireThat(canonicalJson(request.scope) === canonicalJson(scope), 'STALE_PROPOSAL');
+  requireThat(request.addressees[0] === speaker && request.speaker === recipient, 'WRONG_RECIPIENT');
+  validateHearing(question, receipt, speaker, sequence);
+
+  const missing = request.body.missing;
+  const body = {
+    node: 'action', act: choice, actor: speaker, recipient, missing,
+    target: receivedTarget(request, receipt),
+  };
+  if (choice === 'Tell') {
+    shape(subject, ['productId', 'unitId']);
+    shape(fact, ['kind', 'value']);
+    requireThat(fact.kind === missing && reason === undefined, 'UNSUPPORTED_TERMS');
+    body.fact = { ...subject, value: fact.value };
+  } else {
+    requireThat(choice === 'Decline' && subject === undefined && fact === undefined, 'UNSUPPORTED_TERMS');
+    body.reason = reason;
+  }
+
+  const expression = expressionRecord(input, 'REMARK', 'currentSelfPerformance', 'current', request.proposal, body);
+  return messageRecord(input, expression, null);
+}
+
 export function compileCounter(input) {
   const original = validateReceivedOffer(input);
   const terms = exchangeTerms(original);
@@ -339,14 +403,25 @@ export function outwardCommunication(record) {
       ' (' + currency + ') for ' + record.label + ' (' + unitId + ').';
   } else {
     requireThat(record.label === null, 'UNSUPPORTED_TERMS');
-    if (expression.body.act === 'Clarify') {
-      line = CLARIFICATION[expression.body.missing];
-    } else {
-      line = expression.body.act + 's proposal ' + proposalId + ', version ' + version + '.';
+    const { act, missing, fact } = expression.body;
+    switch (act) {
+      case 'Clarify':
+        line = CLARIFICATION[missing];
+        break;
+      case 'Tell':
+        line = missing === 'list_price'
+          ? 'As far as I know, the list price is ' + fact.value + ' minor units.'
+          : 'As far as I know, the item is ' + (fact.value ? 'available.' : 'unavailable.');
+        break;
+      case 'Decline':
+        line = expression.body.reason;
+        break;
+      default:
+        line = act + 's proposal ' + proposalId + ', version ' + version + '.';
     }
   }
   const reason = expression.reply?.reason ?? expression.body.reason;
-  if (reason) line += ' ' + reason;
+  if (reason && expression.body.act !== 'Decline') line += ' ' + reason;
   return freeze(copy({
     expression,
     content: { kind: isOffer ? 'proposal' : expression.function === 'REQUEST' ? 'question' : 'response', text: line },

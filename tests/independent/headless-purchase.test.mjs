@@ -275,7 +275,7 @@ test('A7-05 actor capabilities conceal other receipts, secret catalog, private B
   const reply = clerk.submit('command_0120', 'respond', { reference: offer });
   assert.equal(result(reply).observationId, undefined);
   for (const bound of [buyer, clerk, observer]) {
-    assert.deepEqual(Object.keys(bound).sort(), ['menu', 'submit', 'view']);
+    assert.deepEqual(Object.keys(bound).sort(), ['menu', 'questionMenu', 'submit', 'view']);
     const view = bound.view();
     const keys = allKeys(view);
     for (const forbidden of ['privateComposition', 'selectedVibe', 'intendedFraming', 'candidates', 'judgments', 'journal', 'personality']) {

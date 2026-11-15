@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { canonicalJson, ContractError, copy, fields, freeze, id, isRecord, requireThat } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { createRun, executeCommand, validateRun } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs';
 import {
-  compileAcceptance, compileClarification, compileCounter, compileOffer, compileRefusal,
+  compileAcceptance, compileClarification, compileCounter, compileOffer, compileQuestionAnswer, compileRefusal,
+  QUESTION_DECLINE_REASONS,
   exchangeTerms, expressionReference, observePurchaseMessage,
 } from '../communication/purchase-meaning.mjs';
 import { choosePurchaseResponse, deliveryFit, purchaseProfile } from '../decisions/clerk.mjs';
@@ -13,13 +14,14 @@ import {
 
 export { BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID } from './scenario.mjs';
 
-const SAVE_SCHEMA = 'lab-headless-generalization-save@1';
+const SAVE_SCHEMA = 'lab-headless-generalization-save@2';
 const EXPRESSION_SCHEMA = 'kw-expression@1';
 const actions = freeze({
   offer: 'send_message',
   accept: 'send_message',
   respond: 'send_message',
   reply: 'send_message',
+  answer_question: 'send_message',
   shop: 'send_message',
   pay: 'perform_action',
   handover: 'perform_action',
@@ -33,6 +35,7 @@ const safeRuleErrors = new Set([
   'AMBIGUOUS_ASSENT', 'STALE_PROPOSAL', 'WRONG_ACTOR', 'WRONG_CONTROLLER', 'WRONG_RECIPIENT',
   'UNKNOWN_REFERENCE', 'UNSUPPORTED_TERMS', 'UNAVAILABLE_EXPRESSION', 'NO_RECEIVING_PATH',
   'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_INELIGIBLE', 'INVALID_TERMS',
+  'QUESTION_PENDING', 'QUESTION_UNAVAILABLE', 'ANSWER_INELIGIBLE',
   'INSUFFICIENT_FUNDS', 'ACTION_UNAVAILABLE', 'PRICE_POLICY', 'PAYMENT_REQUIRED', 'ALREADY_PAID', 'ALREADY_FULFILLED', 'ALREADY_OBSERVED',
 ]);
 
@@ -125,7 +128,10 @@ function makeOffer(data, command, settings, openingEventId) {
   });
   const observation = receiveMessage(data, message);
   proposal.offerMessageId = message.id;
-  if (prior) prior.status = 'superseded';
+  if (prior) {
+    prior.status = 'superseded';
+    closePendingQuestions(prior);
+  }
   data.proposals.push(proposal);
   const event = recordEvent(data, 'offer', command.id, {
     proposalId: proposal.id, version: proposal.version, messageId: message.id,
@@ -190,7 +196,7 @@ function shop(data, command, settings) {
   return { ...resultingOffer, openingEventId: opening.id, choice };
 }
 
-function responseContext(data, proposal, actorId) {
+function offerContext(data, proposal, actorId) {
   requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
   const local = actorView(data, actorId);
   const offer = offerRecord(data, proposal);
@@ -200,12 +206,18 @@ function responseContext(data, proposal, actorId) {
   const { expression, framing, prominence } = receipt.receivedDetails.communication;
   const terms = exchangeTerms(expression);
   const product = local.references.find(entry => entry.unitId === terms.unitId);
+  const actor = data.actors.find(entry => entry.id === actorId);
+  return { actor, local, offer, receipt, terms, product, framing, prominence };
+}
+
+function responseContext(data, proposal, actorId, context = offerContext(data, proposal, actorId)) {
+  const { actor, local, offer, receipt, terms, product, framing, prominence } = context;
   const counterCount = data.events.filter(event => event.type === 'counter' &&
     event.details.proposalId === proposal.id && event.details.actorId === actorId).length;
-  const actor = data.actors.find(entry => entry.id === actorId);
   const judgment = data.judgments.find(entry => entry.actorId === actorId && entry.towardId === offer.expression.speaker);
   const decision = choosePurchaseResponse({
     actorId, role: actor.role, profile: actorProfile(actor), counterCount,
+    allowRefuseMissing: actor.controller === 'human',
     warmth: judgment.warmth, trust: judgment.trust, judgmentCauses: judgment.causes,
     ...(actor.role === 'customer' && { fundsMinor: local.account.balanceMinor }),
     offer: {
@@ -214,18 +226,26 @@ function responseContext(data, proposal, actorId) {
     },
     product,
   });
-  return { actor, decision, offer, receipt, terms, product };
+  return { ...context, decision };
 }
 
-function replyToOffer(data, command) {
-  const { payload } = command;
-  fields(payload, ['action', 'actorId'], ['reference', ...(payload.action === 'reply' ? ['choice'] : [])]);
-  const proposal = currentProposal(data, payload.reference, payload.actorId);
-  const { actor, decision, offer, receipt, terms, product } = responseContext(data, proposal, payload.actorId);
-  const autonomous = payload.action === 'respond';
-  requireThat(actor.controller === (autonomous ? 'rules' : 'human'), 'WRONG_CONTROLLER');
+function pendingQuestion(proposal, askerId) {
+  return proposal.questions?.find(question => question.askerId === askerId && question.status === 'pending');
+}
 
-  const choice = autonomous ? decision.selected : payload.action === 'accept' ? 'Accept' : payload.choice;
+function hasAsked(proposal, askerId, missing) {
+  return proposal.questions?.some(question => question.askerId === askerId && question.missing === missing) ?? false;
+}
+
+function closePendingQuestions(proposal) {
+  for (const question of proposal.questions ?? []) {
+    if (question.status === 'pending') question.status = 'closed';
+  }
+}
+
+function resolveOfferReply(data, command, proposal, context, choice, causeMessageId = context.offer.id) {
+  const { actor, decision, offer, receipt, terms, product } = context;
+  const reference = { id: proposal.id, version: proposal.version };
   const candidate = decision.candidates.find(entry => entry.act === choice && entry.eligible);
   requireThat(candidate, choice === 'Accept' ? 'ACCEPTANCE_INELIGIBLE' : 'RESPONSE_INELIGIBLE');
   const reply = {
@@ -234,7 +254,7 @@ function replyToOffer(data, command) {
     recipient: offer.expression.speaker,
     offer,
     receipt,
-    reference: payload.reference,
+    reference,
     delivery: decision.delivery,
     reason: candidate.reason,
   };
@@ -242,7 +262,7 @@ function replyToOffer(data, command) {
   let message;
   let changed = proposal;
   let eventType;
-  const details = { proposalId: proposal.id, version: proposal.version, actorId: actor.id, causeMessageId: offer.id };
+  const details = { proposalId: proposal.id, version: proposal.version, actorId: actor.id, causeMessageId };
   switch (choice) {
     case 'Accept':
       eventType = 'agreement';
@@ -285,9 +305,102 @@ function replyToOffer(data, command) {
 
   const observation = receiveMessage(data, message);
   const event = recordEvent(data, eventType, command.id, { ...details, messageId: message.id });
+  if (choice === 'Clarify') {
+    proposal.questions ??= [];
+    proposal.questions.push({ askerId: actor.id, recipientId: offer.expression.speaker, missing: decision.missing,
+      messageId: message.id, observationId: observation.id, status: 'pending' });
+  } else {
+    closePendingQuestions(proposal);
+  }
   if (choice === 'Accept') proposal.agreementEventId = event.id;
-  data.decisions.push({ causeMessageId: offer.id, responseMessageId: message.id, mode: actor.controller, choice, decision });
+  data.decisions.push({ causeMessageId, responseMessageId: message.id, mode: actor.controller, choice, decision });
   return messageResult(event, changed, message, observation);
+}
+
+function replyToOffer(data, command) {
+  const { payload } = command;
+  fields(payload, ['action', 'actorId'], ['reference', ...(payload.action === 'reply' ? ['choice'] : [])]);
+  const proposal = currentProposal(data, payload.reference, payload.actorId);
+  const offer = offerContext(data, proposal, payload.actorId);
+  const autonomous = payload.action === 'respond';
+  requireThat(offer.actor.controller === (autonomous ? 'rules' : 'human'), 'WRONG_CONTROLLER');
+  requireThat(!pendingQuestion(proposal, offer.actor.id) || (!autonomous && payload.choice === 'Refuse'), 'QUESTION_PENDING');
+
+  const context = responseContext(data, proposal, payload.actorId, offer);
+  const choice = autonomous ? context.decision.selected : payload.action === 'accept' ? 'Accept' : payload.choice;
+  if (choice === 'Clarify') requireThat(!hasAsked(proposal, offer.actor.id, context.decision.missing), 'QUESTION_UNAVAILABLE');
+  return resolveOfferReply(data, command, proposal, context, choice);
+}
+
+function questionContext(data, reference, actorId) {
+  requireThat(isRecord(reference) && Object.keys(reference).length === 2 && isRecord(reference.expression) &&
+    typeof reference.observationId === 'string', 'QUESTION_UNAVAILABLE');
+  const questionId = reference.expression.id;
+  const proposal = data.proposals.find(entry => entry.status === 'open' && entry.questions?.some(question =>
+    question.messageId === questionId && question.recipientId === actorId && question.status === 'pending'));
+  requireThat(proposal, 'QUESTION_UNAVAILABLE');
+  const state = proposal.questions.find(question => question.messageId === questionId);
+  const message = data.messages.find(entry => entry.id === state.messageId);
+  const view = actorView(data, actorId);
+  const receipt = view.observations.find(entry => entry.id === state.observationId && entry.source.id === state.messageId);
+  requireThat(receipt && reference.observationId === receipt.id &&
+    canonicalJson(reference.expression) === canonicalJson(expressionReference(message.expression)), 'QUESTION_UNAVAILABLE');
+
+  const { productId, unitId } = exchangeTerms(offerRecord(data, proposal).expression);
+  const product = view.references.find(entry => entry.productId === productId && entry.unitId === unitId);
+  const listPrice = state.missing === 'list_price';
+  const value = listPrice ? product?.priceMinor : product?.available;
+  const fact = value === undefined ? null : { kind: state.missing, value };
+  const factObservationId = listPrice ? product?.priceObservationId : product?.availabilityObservationId;
+  const actor = data.actors.find(entry => entry.id === actorId);
+  return { actor, proposal, state, message, receipt, productId, unitId, fact, factObservationId: factObservationId ?? product?.observationId };
+}
+
+function respondAfterAnswer(data, command, proposal, question, choice) {
+  const context = offerContext(data, proposal, question.askerId);
+  if (context.actor.controller !== 'rules') return null;
+  if (choice === 'Decline') {
+    const reason = 'I cannot decide without ' + question.missing + '.';
+    const decision = {
+      rule: 'R2', selected: 'Refuse', candidates: [{ act: 'Refuse', eligible: true, reason }],
+      delivery: { vibe: actorProfile(context.actor).personality.manner.plain, salience: 'NUANCED' },
+    };
+    return resolveOfferReply(data, command, proposal, { ...context, decision }, 'Refuse', question.answerMessageId);
+  }
+  const updated = responseContext(data, proposal, question.askerId, context);
+  return resolveOfferReply(data, command, proposal, updated, updated.decision.selected, question.answerMessageId);
+}
+
+function answerQuestion(data, command) {
+  const { payload } = command;
+  fields(payload, ['action', 'actorId', 'question'], ['choice']);
+  const context = questionContext(data, payload.question, payload.actorId);
+  const { actor, proposal, state, message, receipt, productId, unitId, fact, factObservationId } = context;
+  const human = actor.controller === 'human';
+  requireThat(human === Object.hasOwn(payload, 'choice'), 'WRONG_CONTROLLER');
+  const choice = human ? payload.choice : fact ? 'Tell' : 'Decline';
+  requireThat(choice === 'Decline' || (choice === 'Tell' && fact), 'ANSWER_INELIGIBLE');
+
+  const answer = compileQuestionAnswer({
+    ...messageFields(data, command), speaker: actor.id, recipient: state.askerId,
+    question: message, receipt, choice,
+    delivery: { vibe: actorProfile(actor).personality.manner.plain, salience: 'NUANCED' },
+    ...(choice === 'Tell' ? { subject: { productId, unitId }, fact } : {
+      reason: human ? QUESTION_DECLINE_REASONS.declined : QUESTION_DECLINE_REASONS.missingFact,
+    }),
+  });
+  const observation = receiveMessage(data, answer);
+  const event = recordEvent(data, choice === 'Tell' ? 'clarification_told' : 'clarification_declined', command.id, {
+    proposalId: proposal.id, version: proposal.version, actorId: actor.id,
+    causeMessageId: state.messageId, messageId: answer.id,
+    ...(choice === 'Tell' && { factObservationId }),
+  });
+  state.status = choice === 'Tell' ? 'told' : 'declined';
+  state.answerMessageId = answer.id;
+  state.answerObservationId = observation.id;
+
+  const followUp = respondAfterAnswer(data, command, proposal, state, choice);
+  return { ...messageResult(event, proposal, answer, observation), ...(followUp && { followUp }) };
 }
 
 function settlementContext(data, payload, performer) {
@@ -403,7 +516,7 @@ function handover(data, command) {
 }
 
 const dispatch = {
-  offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, shop, pay,
+  offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, answer_question: answerQuestion, shop, pay,
   handover, resolve_handover_failure: handover, deliver_completion: deliverCompletion,
 };
 
@@ -444,6 +557,11 @@ function replay(text) {
   if (saved?.schema === 'lab-headless-purchase-save@1') {
     const error = new ContractError('INCOMPATIBLE_SAVE_VERSION');
     error.message = 'Replay this save with the historical v0.1 runner at commit 9088cd2fd9bf162319e745853930f8ea2cc40375.';
+    throw error;
+  }
+  if (saved?.schema === 'lab-headless-generalization-save@1') {
+    const error = new ContractError('INCOMPATIBLE_SAVE_VERSION');
+    error.message = 'Replay this save with the historical v0.2 runner at commit c77a19c5d2cf294279d1be9208343497bbb3246f.';
     throw error;
   }
   fields(saved, ['schema', 'expressionSchema', 'scenario', 'run']);
@@ -508,6 +626,7 @@ export function createPurchase(options = {}) {
     const canRead = observationId => run.data.observations.some(entry => entry.id === observationId && entry.observerId === actorId);
     if (result.observationId && !canRead(result.observationId)) delete result.observationId;
     if (result.observationIds) result.observationIds = result.observationIds.filter(canRead);
+    if (result.followUp?.observationId && !canRead(result.followUp.observationId)) delete result.followUp.observationId;
     return freeze({ status: outcome.status, receipt: { commandId, result } });
   }
 
@@ -535,8 +654,18 @@ export function createPurchase(options = {}) {
         },
         menu(reference) {
           current();
-          const eligible = new Set(decide(reference, actorId).candidates.filter(candidate => candidate.eligible).map(candidate => candidate.act));
+          const proposal = currentProposal(run.data, reference, actorId);
+          const context = offerContext(run.data, proposal, actorId);
+          if (pendingQuestion(proposal, actorId)) return freeze(context.actor.controller === 'human' ? ['Refuse'] : []);
+          const { decision } = responseContext(run.data, proposal, actorId, context);
+          const eligible = new Set(decision.candidates.filter(candidate => candidate.eligible).map(candidate => candidate.act));
+          if (hasAsked(proposal, actorId, decision.missing)) eligible.delete('Clarify');
           return freeze(ACTOR_MENU_ORDER.filter(act => eligible.has(act)));
+        },
+        questionMenu(question) {
+          current();
+          const { fact } = questionContext(run.data, question, actorId);
+          return freeze(fact ? ['Tell', 'Decline'] : ['Decline']);
         },
         submit(commandId, action, args = {}) {
           current();

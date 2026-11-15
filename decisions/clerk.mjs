@@ -107,7 +107,7 @@ function knownCircumstances(view, offer, product) {
   const facts = [];
   if (product?.priceMinor != null) facts.push({
     fact: 'marked_price', value: product.priceMinor,
-    source: { kind: 'observation', observationId: product.observationId, field: 'priceMinor' },
+    source: { kind: 'observation', observationId: product.priceObservationId ?? product.observationId, field: 'priceMinor' },
     effect: 'Apply the responding role’s price policy to its observed marked price.'
   });
   if (product?.available != null) facts.push({
@@ -190,7 +190,7 @@ export function choosePurchaseResponse(view) {
   const knownProduct = product?.productId === productId ? product : null;
   const circumstances = knownCircumstances(view, offer, knownProduct);
   const evidenceObservationIds = [...new Set([observationId, knownProduct?.observationId,
-    knownProduct?.availabilityObservationId].filter(Boolean))];
+    knownProduct?.priceObservationId, knownProduct?.availabilityObservationId].filter(Boolean))];
   const personality = (profile ?? CLERK_PROFILE).personality;
   const { leaning, deliveryTastes, manner } = personality;
   const tieOrder = TIE_ORDER[leaning];
@@ -221,28 +221,29 @@ export function choosePurchaseResponse(view) {
       : missing
         ? excluded('Accept', clarification, 'C7')
         : candidate('Accept', true, 'I accept the immediate exchange on these terms.'),
-    missing ? excluded('Refuse', clarification, 'C7') : candidate('Refuse', true, refusal),
+    missing
+      ? candidate('Clarify', true, clarification)
+      : excluded('Clarify', restriction ? 'A known restriction answers the offer.' : 'I have the required facts.', '4.2'),
+    missing && !view.allowRefuseMissing
+      ? excluded('Refuse', clarification, 'C7')
+      : candidate('Refuse', true, refusal),
     missing
       ? excluded('Counter', clarification, 'C7')
       : noCounter
         ? excluded('Counter', noCounterReason, counterCount >= 2 ? 'G05' : '4.3')
         : candidate('Counter', true, restriction.text, { amountMinor: restriction.counter }),
-    missing
-      ? candidate('Clarify', true, clarification)
-      : excluded('Clarify', restriction ? 'A known restriction answers the offer.' : 'I have the required facts.', '4.2'),
     excluded('Defer', 'Deferred responses are outside this immediate exchange.', 'C7'),
     excluded('Acknowledge', 'Acknowledge is outside this immediate exchange.', 'C7')
   ];
 
   const inputs = { profile: profile ?? CLERK_PROFILE, warmth, trust, offer, circumstances, budgetMinor: view.budgetMinor };
   const eligible = options.filter(entry => entry.eligible);
-  const clarificationOnly = eligible[0].act === 'Clarify';
-  const ranked = clarificationOnly ? eligible : rankScored(eligible.map(entry => {
+  const ranked = missing ? eligible : rankScored(eligible.map(entry => {
     const rows = scoredRows(entry, inputs);
     return { ...entry, rows, score: rows.reduce((sum, row) => sum + row.points, 0) };
   }), tieOrder);
   const winner = ranked[0];
-  const tied = ranked.length > 1 && winner.score === ranked[1].score;
+  const tied = ranked.length > 1 && winner.score !== null && winner.score === ranked[1].score;
   const reason = winner.rows.length
     ? rankedReason(winner, ranked, tieOrder, restriction, warmth)
     : { reason: winner.reason, ...(restriction && { reasonRule: restriction.rule }) };

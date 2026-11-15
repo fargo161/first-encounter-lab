@@ -280,3 +280,37 @@ test('the authored taste distinguishes actual receipt fit from passing prominenc
   assert.equal(passingDeliveryNudge(cues, 'emphatic', tastes), 1);
   assert.equal(passingDeliveryNudge(cues, 'emphatic', { displayed_concern: -1 }), -1);
 });
+
+test('R1 lets either human responder refuse missing terms without granting assent or scoring a clarification', () => {
+  for (const role of ['clerk', 'customer']) {
+    const original = clerkView();
+    const view = {
+      ...original, role, profile: role === 'clerk' ? CLERK_PROFILE : CUSTOMER_PROFILE,
+      product: { ...original.product, priceMinor: null }
+    };
+    const menu = result => result.candidates.filter(option => option.eligible);
+    const result = choosePurchaseResponse({ ...view, allowRefuseMissing: true });
+    assert.equal(result.selected, 'Clarify');
+    assert.equal(result.missing, 'list_price');
+    assert.equal(result.tieRule.used, false);
+    assert.deepEqual(menu(result).map(({ act, score }) => [act, score]), [['Clarify', null], ['Refuse', null]]);
+    assert.equal(find(result, 'Accept').eligible, false);
+    assert.equal(find(result, 'Counter').eligible, false);
+    assert.deepEqual(choosePurchaseResponse({ ...view, allowRefuseMissing: true, actualListPrice: 100 }), result);
+    assert.deepEqual(menu(choosePurchaseResponse(view)).map(({ act }) => act), ['Clarify']);
+  }
+});
+
+test('a trusted price report is scored with its exact attributed receipt', () => {
+  const view = clerkView();
+  view.offer.amountMinor = 250;
+  view.product.priceMinor = 250;
+  view.product.priceObservationId = 'observation_0099';
+  const result = choosePurchaseResponse({ ...view, actualListPrice: 300 });
+  assert.equal(result.selected, 'Accept');
+  assert.deepEqual(result.evidenceObservationIds, ['observation_0020', 'observation_0021', 'observation_0099']);
+  const price = result.circumstances.find(fact => fact.fact === 'marked_price');
+  assert.equal(price.value, 250);
+  assert.equal(price.source.observationId, 'observation_0099');
+  assert.deepEqual(choosePurchaseResponse(view), result);
+});

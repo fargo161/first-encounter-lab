@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID, createPurchase,
 } from '../../../core/purchase.mjs';
-import { exchangeTerms } from '../../../communication/purchase-meaning.mjs';
+import { exchangeTerms, expressionReference } from '../../../communication/purchase-meaning.mjs';
 import { failHandover } from '../../support/action-resolution.mjs';
 
 const OTHER_BUYER = 'actor_0003';
@@ -303,7 +303,7 @@ test('an actor requests genuinely missing price or stock and does not assent or 
       const { session, submit } = harness({ ...options, humanId });
       const ref = reference(offered(submit));
       const asClerk = session.forActor(CLERK_ID);
-      assert.deepEqual(asClerk.menu(ref), ['Clarify']);
+      assert.deepEqual(asClerk.menu(ref), humanId === CLERK_ID ? ['Refuse', 'Clarify'] : ['Clarify']);
       const response = humanId === CLERK_ID
         ? submit('reply', { actorId: CLERK_ID, reference: ref, choice: 'Clarify' })
         : submit('respond', { actorId: CLERK_ID, reference: ref });
@@ -665,4 +665,265 @@ test('the autonomous shopper leaves without composing an Offer when eligible pro
     reload.restore(session.save());
     assert.deepEqual(reload.forActor(BUYER_ID).submit('command_05c0', 'shop'), { status: 'replayed', receipt: leave.receipt });
   }
+});
+
+function questionFor(receivedBy, outcome, session) {
+  const { messageId, observationId } = committed(outcome);
+  const receipt = session.view(receivedBy).observations.find(entry => entry.id === observationId && entry.source.id === messageId);
+  assert.ok(receipt, 'Question must be heard by the addressed actor');
+  return { expression: expressionReference(receipt.receivedDetails.communication.expression), observationId };
+}
+
+function followUp(session, commandId, action, payload) {
+  const command = session.command(commandId, action, payload);
+  return { command, ...session.submit(command) };
+}
+
+test('rules ask once per missing fact and current offer version across four attempts and save/reload', () => {
+  const options = fixtureOptions();
+  options.knowledge[1].priceKnown = false;
+  const { session, submit } = harness(options);
+  const ref = reference(offered(submit));
+  const payload = { actorId: CLERK_ID, reference: ref };
+  const question = submit('respond', payload);
+  assert.equal(committed(question).type, 'clarification');
+  assert.deepEqual(session.forActor(CLERK_ID).menu(ref), []);
+  const snapshot = session.save();
+  for (let attempt = 1; attempt < 4; attempt++) {
+    assert.equal(submit('respond', payload).code, 'QUESTION_PENDING');
+  }
+  assert.equal(session.save(), snapshot);
+  assert.equal(session.inspect().data.events.filter(event => event.type === 'clarification').length, 1);
+  const fresh = createPurchase();
+  fresh.restore(snapshot);
+  assert.equal(fresh.save(), snapshot);
+  assert.equal(followUp(fresh, 'command_00d1', 'respond', payload).code, 'QUESTION_PENDING');
+  assert.equal(fresh.submit(question.command).status, 'replayed');
+  assert.equal(fresh.save(), snapshot);
+  assert.deepEqual(fresh.forActor(BUYER_ID).questionMenu(questionFor(BUYER_ID, question, fresh)), ['Tell', 'Decline']);
+});
+
+test('other proposals and their replacement versions ask independently and close superseded questions', () => {
+  const options = fixtureOptions();
+  options.knowledge[1].priceKnown = false;
+  const { session, submit } = harness(options);
+  const first = reference(offered(submit));
+  const firstQuestion = questionFor(BUYER_ID, submit('respond', { actorId: CLERK_ID, reference: first }), session);
+  const second = reference(offered(submit));
+  const secondQuestion = questionFor(BUYER_ID, submit('respond', { actorId: CLERK_ID, reference: second }), session);
+  const replacement = reference(offered(submit, { supersedes: first }));
+  assert.equal(replacement.id, first.id);
+  assert.equal(replacement.version, 2);
+  assert.equal(committed(submit('respond', { actorId: CLERK_ID, reference: replacement })).type, 'clarification');
+  assert.throws(() => session.forActor(BUYER_ID).questionMenu(firstQuestion), { code: 'QUESTION_UNAVAILABLE' });
+  assert.deepEqual(session.forActor(BUYER_ID).questionMenu(secondQuestion), ['Tell', 'Decline']);
+  assert.deepEqual(session.inspect().data.proposals.map(proposal => proposal.questions[0].status), ['closed', 'pending', 'pending']);
+});
+
+test('R1 lets a human refuse with an unknown price before or after asking', () => {
+  for (const askFirst of [false, true]) {
+    const options = { ...fixtureOptions(), humanId: CLERK_ID };
+    options.knowledge[1].priceKnown = false;
+    const { session, submit } = harness(options);
+    const ref = reference(offered(submit));
+    const clerk = session.forActor(CLERK_ID);
+    assert.deepEqual(clerk.menu(ref), ['Refuse', 'Clarify']);
+    if (askFirst) {
+      committed(submit('reply', { actorId: CLERK_ID, reference: ref, choice: 'Clarify' }));
+      assert.deepEqual(clerk.menu(ref), ['Refuse']);
+      assert.equal(submit('reply', { actorId: CLERK_ID, reference: ref, choice: 'Clarify' }).code, 'QUESTION_PENDING');
+    }
+    const refused = committed(clerk.submit('command_00e1', 'reply', { reference: ref, choice: 'Refuse' }));
+    assert.equal(refused.type, 'refusal');
+    const heard = session.view(BUYER_ID).observations.at(-1).receivedDetails.communication.expression;
+    assert.equal(heard.body.act, 'Refuse');
+    const proposal = session.inspect().data.proposals[0];
+    assert.equal(proposal.status, 'refused');
+    if (askFirst) assert.equal(proposal.questions[0].status, 'closed');
+    assert.equal(session.view(CLERK_ID).references.find(item => item.unitId === UNIT_ID).priceMinor, undefined);
+  }
+});
+
+test('rules answer a human question by telling only a legitimately known fact or declining without scoring', () => {
+  for (const hasFact of [false, true]) {
+    const options = { ...fixtureOptions(), humanId: CLERK_ID };
+    options.knowledge[1].priceKnown = false;
+    if (!hasFact) options.knowledge[0].priceKnown = false;
+    const { session, submit } = harness(options);
+    const ref = reference(offered(submit));
+    const question = questionFor(BUYER_ID, submit('reply', { actorId: CLERK_ID, reference: ref, choice: 'Clarify' }), session);
+    const before = session.inspect().data.decisions.length;
+    const answered = committed(session.forActor(BUYER_ID).submit('command_00e2', 'answer_question', { question }));
+    const observed = session.view(CLERK_ID).observations.at(-1);
+    const body = observed.receivedDetails.communication.expression.body;
+    assert.equal(body.act, hasFact ? 'Tell' : 'Decline');
+    if (hasFact) {
+      assert.deepEqual(body.fact, { productId: PRODUCT_ID, unitId: UNIT_ID, value: 300 });
+      assert.equal(session.view(CLERK_ID).references.find(item => item.unitId === UNIT_ID).priceObservationId, observed.id);
+      assert.ok(session.forActor(CLERK_ID).menu(ref).includes('Accept'));
+    } else {
+      assert.equal(body.reason, "I don't have that fact.");
+      assert.equal('fact' in body, false);
+      assert.deepEqual(session.forActor(CLERK_ID).menu(ref), ['Refuse']);
+    }
+    assert.equal(answered.followUp, undefined);
+    assert.equal(session.inspect().data.decisions.length, before);
+  }
+});
+
+test('each human addressee can decline even with the fact, without revealing whether they have it', () => {
+  for (const humanId of [CLERK_ID, BUYER_ID]) {
+    const utterances = [];
+    for (const hasFact of [false, true]) {
+      const options = { ...fixtureOptions(), humanId };
+      const askerId = humanId === BUYER_ID ? CLERK_ID : BUYER_ID;
+      const asker = options.knowledge.find(grant => grant.actorId === askerId && grant.unitId === UNIT_ID);
+      const addressee = options.knowledge.find(grant => grant.actorId === humanId && grant.unitId === UNIT_ID);
+      asker.priceKnown = false;
+      if (!hasFact) addressee.priceKnown = false;
+      const { session, submit } = harness(options);
+      const ref = reference(offered(submit, { actorId: humanId, recipientId: askerId }));
+      const question = questionFor(humanId, submit('respond', { actorId: askerId, reference: ref }), session);
+      const human = session.forActor(humanId);
+      assert.deepEqual(human.questionMenu(question), hasFact ? ['Tell', 'Decline'] : ['Decline']);
+      if (!hasFact) {
+        assert.equal(human.submit('command_00e3', 'answer_question', { question, choice: 'Tell' }).code, 'ANSWER_INELIGIBLE');
+      }
+      const payload = { question, choice: 'Decline' };
+      const outcome = human.submit('command_00e4', 'answer_question', payload);
+      assert.equal(committed(outcome).type, 'clarification_declined');
+      assert.equal(outcome.receipt.result.followUp.type, 'refusal');
+      assert.equal(human.submit('command_00e4', 'answer_question', payload).status, 'replayed');
+      const heard = session.view(askerId).observations.at(-1).receivedDetails.communication;
+      assert.equal(heard.expression.body.act, 'Decline');
+      assert.equal(heard.expression.body.reason, 'I decline to answer.');
+      assert.equal('fact' in heard.expression.body, false);
+      utterances.push({ content: heard.content, framing: heard.framing, prominence: heard.prominence });
+      const { events, proposals, messages } = session.inspect().data;
+      assert.equal(proposals[0].status, 'refused');
+      assert.equal(proposals[0].questions[0].status, 'declined');
+      assert.equal(events.filter(event => event.type === 'refusal').length, 1);
+      assert.equal(messages.at(-1).expression.body.act, 'Refuse');
+      assert.match(messages.at(-1).expression.body.reason, /list_price/);
+      assert.equal(events.at(-1).details.causeMessageId, heard.expression.id);
+      assert.equal(session.view(askerId).references.find(item => item.unitId === UNIT_ID).priceMinor, undefined);
+    }
+    assert.deepEqual(utterances[0], utterances[1]);
+  }
+});
+
+test('a told belief of 250 can yield agreement on the 250 offer while the hidden actual 300 bars payment', () => {
+  const options = fixtureOptions();
+  options.knowledge[0].listedPriceMinor = 250;
+  options.knowledge[0].available = false;
+  options.knowledge[1].priceKnown = false;
+  const { session, submit } = harness(options);
+  const ledger = session.inspect().data.ledger;
+  const ref = reference(offered(submit, { amountMinor: 250 }));
+  const question = questionFor(BUYER_ID, submit('respond', { actorId: CLERK_ID, reference: ref }), session);
+  const buyer = session.forActor(BUYER_ID);
+  const told = committed(buyer.submit('command_00f1', 'answer_question', { question, choice: 'Tell' }));
+  assert.equal(told.type, 'clarification_told');
+  assert.equal(told.followUp.type, 'agreement');
+
+  const clerk = session.forActor(CLERK_ID);
+  const observation = clerk.view().observations.at(-1);
+  const expression = observation.receivedDetails.communication.expression;
+  assert.equal(expression.speaker, BUYER_ID);
+  assert.equal(expression.body.act, 'Tell');
+  assert.deepEqual(expression.body.fact, { productId: PRODUCT_ID, unitId: UNIT_ID, value: 250 });
+  assert.deepEqual(expression.body.target.expression, question.expression);
+  assert.equal(expression.body.target.observationId, question.observationId);
+  assert.equal(expression.body.target.proposalId, ref.id);
+  const known = clerk.view().references.find(product => product.unitId === UNIT_ID);
+  assert.equal(known.priceMinor, 250);
+  assert.equal(known.priceObservationId, observation.id);
+  assert.equal(known.available, true, 'Tell must only update its requested fact');
+
+  const saveBeforePayment = session.save();
+  const rejection = buyer.submit('command_00f2', 'pay', { reference: ref });
+  assert.deepEqual(rejection, { status: 'rejected', code: 'ACTION_UNAVAILABLE' });
+  assert.equal(session.save(), saveBeforePayment);
+  assert.equal(session.inspect().data.catalog.find(product => product.productId === PRODUCT_ID).priceMinor, 300);
+  assert.deepEqual(session.inspect().data.ledger, ledger);
+  const proposal = session.inspect().data.proposals[0];
+  assert.equal(proposal.status, 'agreed');
+  assert.equal(proposal.paymentEventId, undefined);
+  assert.equal(proposal.handoverEventId, undefined);
+  assert.doesNotMatch(JSON.stringify([rejection, buyer.view(), clerk.view()]), /\b300\b|PRICE_POLICY/);
+  assert.equal(clerk.submit('command_00f3', 'handover', { reference: ref }).code, 'PAYMENT_REQUIRED');
+
+  const fresh = createPurchase();
+  fresh.restore(saveBeforePayment);
+  assert.equal(fresh.save(), saveBeforePayment);
+});
+
+test('stock reports preserve false as an attributed value and a second missing fact may ask separately', () => {
+  const options = fixtureOptions();
+  options.knowledge[0].available = false;
+  options.knowledge[1].priceKnown = false;
+  delete options.knowledge[1].available;
+  const { session, submit } = harness(options);
+  const ref = reference(offered(submit));
+  const first = questionFor(BUYER_ID, submit('respond', { actorId: CLERK_ID, reference: ref }), session);
+  const price = committed(submit('answer_question', { actorId: BUYER_ID, question: first, choice: 'Tell' }));
+  assert.equal(price.followUp.type, 'clarification');
+  const second = questionFor(BUYER_ID, { status: 'committed', receipt: { result: price.followUp } }, session);
+  const stock = committed(submit('answer_question', { actorId: BUYER_ID, question: second, choice: 'Tell' }));
+  assert.equal(stock.followUp.type, 'refusal');
+  const heard = session.view(CLERK_ID).observations.at(-1);
+  const product = session.view(CLERK_ID).references.find(entry => entry.unitId === UNIT_ID);
+  assert.equal(heard.receivedDetails.communication.expression.body.fact.value, false);
+  assert.equal(product.available, false);
+  assert.equal(product.availabilityObservationId, heard.id);
+  assert.equal(product.priceMinor, 300);
+  assert.equal(session.inspect().data.proposals[0].questions.length, 2);
+});
+
+test('invalid or copied question replies do not change an offer, and successful exact retries replay once', () => {
+  const options = fixtureOptions();
+  options.knowledge[1].priceKnown = false;
+  const { session, submit } = harness(options);
+  const ref = reference(offered(submit));
+  const question = questionFor(BUYER_ID, submit('respond', { actorId: CLERK_ID, reference: ref }), session);
+  const snapshot = session.save();
+  const invalid = [
+    { actorId: BYSTANDER, question, choice: 'Tell' },
+    { actorId: BUYER_ID, question: { ...question, observationId: 'observation_ffff' }, choice: 'Tell' },
+    { actorId: BUYER_ID, question: { ...question, expression: { ...question.expression, digest: 'f'.repeat(64) } }, choice: 'Tell' },
+    { actorId: BUYER_ID, question, choice: 'Improvise' },
+    { actorId: BUYER_ID, question, choice: 'Tell', fact: { kind: 'list_price', value: 1 } },
+  ];
+  for (const args of invalid) {
+    assert.equal(submit('answer_question', args).status, 'rejected');
+    assert.equal(session.save(), snapshot);
+  }
+  const other = harness({ ...options, runId: 'run_02a1' });
+  const otherRef = reference(offered(other.submit));
+  questionFor(BUYER_ID, other.submit('respond', { actorId: CLERK_ID, reference: otherRef }), other.session);
+  const otherSnapshot = other.session.save();
+  assert.equal(other.submit('answer_question', { actorId: BUYER_ID, question, choice: 'Tell' }).code, 'QUESTION_UNAVAILABLE');
+  assert.equal(other.session.save(), otherSnapshot);
+  const answer = submit('answer_question', { actorId: BUYER_ID, question, choice: 'Tell' });
+  assert.equal(committed(answer).type, 'clarification_told');
+  const saved = session.save();
+  assert.equal(session.submit(answer.command).status, 'replayed');
+  assert.equal(submit('answer_question', { actorId: BUYER_ID, question, choice: 'Tell' }).code, 'QUESTION_UNAVAILABLE');
+  assert.equal(session.save(), saved);
+});
+
+test('Part A saves replay with their new label and refuse the old v0.2 envelope without mutation', () => {
+  const { session } = harness();
+  const snapshot = session.save();
+  const prior = JSON.parse(snapshot);
+  assert.equal(prior.schema, 'lab-headless-generalization-save@2');
+  assert.equal(prior.expressionSchema, 'kw-expression@1');
+  prior.schema = 'lab-headless-generalization-save@1';
+  assert.throws(() => session.restore(JSON.stringify(prior)), {
+    code: 'INCOMPATIBLE_SAVE_VERSION',
+    message: /historical v0\.2 runner at commit c77a19c5d2cf294279d1be9208343497bbb3246f/,
+  });
+  assert.equal(session.save(), snapshot);
+  session.restore(snapshot);
+  assert.equal(session.save(), snapshot);
 });

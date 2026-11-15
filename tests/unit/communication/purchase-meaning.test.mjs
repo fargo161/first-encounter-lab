@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   compileAcceptance, compileClarification, compileCounter, compileOffer, compileRefusal,
-  exchangeTerms, expressionReference, observePurchaseMessage,
+  compileQuestionAnswer, exchangeTerms, expressionReference, observePurchaseMessage, QUESTION_DECLINE_REASONS,
   validateExpression,
 } from '../../../communication/purchase-meaning.mjs';
 
@@ -252,4 +254,150 @@ test('Accept may deliver the trusted stated reason using the responding characte
   assert.equal(receipt.receivedDetails.communication.prominence, 'emphatic');
   assert.equal(receipt.receivedDetails.communication.framing[0].kind, 'displayed_concern');
   assert.doesNotMatch(JSON.stringify(receipt), /privateComposition|selectedVibe|scorecard/);
+});
+
+function question(missing = 'list_price', overrides = {}) {
+  return compileClarification(replyInput(offer(), { reason: 'I need to check.', missing, ...overrides }));
+}
+
+function answerInput(request = question(), overrides = {}) {
+  return {
+    scope, id: 'message_0004', sequence: 4, speaker: request.expression.addressees[0],
+    recipient: request.expression.speaker, question: request,
+    receipt: observePurchaseMessage(request, {
+      observationId: 'observation_0002', observerId: request.expression.addressees[0],
+    }),
+    delivery: { vibe: 'SE', salience: 'NUANCED' },
+    ...overrides,
+  };
+}
+
+function tellInput(request = question(), value = 250) {
+  return answerInput(request, {
+    choice: 'Tell',
+    subject: { productId: terms.productId, unitId: terms.unitId },
+    fact: { kind: request.expression.body.missing, value },
+  });
+}
+
+test('Tell is an attributed Remark with the exact addressed question and underlying offer version', () => {
+  const request = question();
+  const input = tellInput(request);
+  const record = compileQuestionAnswer(input);
+  const receipt = heard(record);
+  const { expression, content } = receipt.receivedDetails.communication;
+  assert.equal(expression.function, 'REMARK');
+  assert.equal(expression.force, 'currentSelfPerformance');
+  assert.deepEqual(expression.time, { stance: 'current' });
+  assert.deepEqual(expression.addressees, [sellerId]);
+  assert.equal(expression.speaker, buyerId);
+  assert.equal(expression.schema, 'kw-expression@1');
+  assert.deepEqual(expression.proposal, request.expression.proposal);
+  assert.deepEqual(expression.body, {
+    node: 'action',
+    act: 'Tell',
+    actor: buyerId,
+    recipient: sellerId,
+    missing: 'list_price',
+    target: {
+      proposalId: proposal.id,
+      proposalVersion: proposal.version,
+      expression: expressionReference(request.expression),
+      observationId: input.receipt.id,
+    },
+    fact: { productId: terms.productId, unitId: terms.unitId, value: 250 },
+  });
+  assert.equal(request.expression.body.target.expression.id, 'message_0001');
+  assert.equal(content.text, 'As far as I know, the list price is 250 minor units.');
+  assert.doesNotMatch(JSON.stringify(receipt), /priceMinor|amountMinor|scorecard|privateComposition/);
+  assert.throws(() => heard(record, bystanderId), { code: 'NO_RECEIVING_PATH' });
+  assert.throws(() => exchangeTerms(expression), { code: 'UNSUPPORTED_TERMS' });
+});
+
+test('Tell admits only the requested typed fact; unavailable stock is a valid boolean report', () => {
+  const price = tellInput();
+  const stock = question('stock');
+  const report = compileQuestionAnswer(tellInput(stock, false));
+  assert.equal(report.expression.body.fact.value, false);
+  assert.equal(heard(report).receivedDetails.communication.content.text,
+    'As far as I know, the item is unavailable.');
+
+  for (const input of [
+    { ...price, fact: { kind: 'stock', value: true } },
+    { ...price, fact: { kind: 'list_price', value: '250' } },
+    { ...price, fact: { kind: 'list_price', value: 0 } },
+    { ...price, fact: { kind: 'list_price', value: 250, available: true } },
+    { ...price, reason: 'The real price is unknown.' },
+    tellInput(stock, 0),
+  ]) {
+    assert.throws(() => compileQuestionAnswer(input), { code: 'UNSUPPORTED_TERMS' });
+  }
+  const expression = structuredClone(report.expression);
+  expression.body.fact.truthWarranty = 'canonical';
+  assert.throws(() => validateExpression(expression), { code: 'UNSUPPORTED_TERMS' });
+});
+
+test('Decline sends only a permitted reason and never includes the requested fact or its subject', () => {
+  const input = answerInput(question(), { choice: 'Decline' });
+  for (const reason of Object.values(QUESTION_DECLINE_REASONS)) {
+    const record = compileQuestionAnswer({ ...input, reason });
+    const { expression, content } = heard(record).receivedDetails.communication;
+    assert.equal(expression.function, 'REMARK');
+    assert.equal(expression.body.act, 'Decline');
+    assert.equal(expression.body.missing, 'list_price');
+    assert.equal(expression.body.target.expression.id, input.question.id);
+    assert.equal(expression.body.target.observationId, input.receipt.id);
+    assert.equal(content.text, reason);
+    assert.equal(Object.hasOwn(expression.body, 'fact'), false);
+    assert.doesNotMatch(JSON.stringify(expression), /productId|unitId|amountMinor/);
+  }
+  const ordinary = { ...input, reason: QUESTION_DECLINE_REASONS.declined };
+  assert.throws(() => compileQuestionAnswer({
+    ...ordinary, fact: { kind: 'list_price', value: 250 },
+  }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => compileQuestionAnswer({ ...ordinary, reason: 'It costs 250.' }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => compileQuestionAnswer({ ...ordinary, choice: 'Defer' }), { code: 'UNSUPPORTED_TERMS' });
+});
+
+test('answers cannot reuse another question receipt, wrong audience, stale sequence or another run', () => {
+  const input = tellInput();
+  const unrelated = question('list_price', { id: 'message_0003', sequence: 3 });
+  assert.throws(() => compileQuestionAnswer({ ...input, question: unrelated }), { code: 'NO_RECEIVING_PATH' });
+  assert.throws(() => compileQuestionAnswer({ ...input, speaker: bystanderId }), { code: 'WRONG_RECIPIENT' });
+  assert.throws(() => compileQuestionAnswer({ ...input, recipient: bystanderId }), { code: 'WRONG_RECIPIENT' });
+  assert.throws(() => compileQuestionAnswer({ ...input, sequence: 2 }), { code: 'NO_RECEIVING_PATH' });
+  assert.throws(() => compileQuestionAnswer({ ...input, scope: { ...scope, runId: 'run_0002' } }), { code: 'STALE_PROPOSAL' });
+  assert.throws(() => compileQuestionAnswer({ ...input, question: offer() }), { code: 'STALE_PROPOSAL' });
+  const forged = structuredClone(input.receipt);
+  forged.receivedDetails.communication.expression.body.missing = 'stock';
+  assert.throws(() => compileQuestionAnswer({ ...input, receipt: forged }), { code: 'STALE_PROPOSAL' });
+});
+
+test('every checked-in v0.2 trace expression validates without rewriting its bytes', () => {
+  const path = new URL('../../../docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_TRACE.json', import.meta.url);
+  const bytes = readFileSync(path);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),
+    '43580bb583f3e1f198a1ebd6ad8b60fc885fb7515849836e62315416680042f4');
+  const unique = new Set();
+  const acts = new Set();
+
+  function visit(value) {
+    if (value === null || typeof value !== 'object') return;
+    if (value.schema === 'kw-expression@1') {
+      const before = JSON.stringify(value);
+      if (!unique.has(before)) {
+        unique.add(before);
+        assert.equal(validateExpression(value), true);
+        assert.equal(JSON.stringify(value), before);
+        acts.add(value.body.act ?? (value.reply ? 'Counter' : 'Offer'));
+      }
+      return;
+    }
+    for (const child of Object.values(value)) visit(child);
+  }
+
+  visit(JSON.parse(bytes));
+  assert.deepEqual([...acts].sort(), ['Accept', 'Clarify', 'Counter', 'Offer', 'Refuse']);
+  assert.ok(unique.size > acts.size);
+  assert.deepEqual(readFileSync(path), bytes);
 });

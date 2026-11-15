@@ -146,9 +146,9 @@ export function scenarioPackageRef(settings) {
   const { runId, ...packageSettings } = settings;
   return freeze({
     id: 'package_0001',
-    revision: 2,
+    revision: 3,
     digest: createHash('sha256').update(canonicalJson({
-      schema: 'lab-headless-generalization@1', packageSettings, authored: { roles, personalities, cues },
+      schema: 'lab-headless-generalization@2', packageSettings, authored: { roles, personalities, cues },
     })).digest('hex'),
   });
 }
@@ -233,12 +233,22 @@ function knownReferences(observations) {
   const references = new Map();
   for (const observation of observations) {
     const received = observation.receivedDetails;
+    const expression = received.communication?.expression;
     if (received.product) {
       const product = received.product;
       references.set(product.unitId, { ...product, observationId: observation.id });
-    } else if (received.communication?.expression.function === 'OFFER') {
-      const { productId, unitId } = exchangeTerms(received.communication.expression);
+    } else if (expression?.function === 'OFFER') {
+      const { productId, unitId } = exchangeTerms(expression);
       if (!references.has(unitId)) references.set(unitId, { productId, unitId, observationId: observation.id });
+    } else if (expression?.body.act === 'Tell') {
+      const { fact, missing } = expression.body;
+      const known = references.get(fact.unitId);
+      if (known?.productId === fact.productId) {
+        const learned = missing === 'list_price'
+          ? { priceMinor: fact.value, priceObservationId: observation.id }
+          : { available: fact.value, availabilityObservationId: observation.id };
+        references.set(fact.unitId, { ...known, ...learned });
+      }
     } else if (received.transaction?.kind === 'handover') {
       const { unitId } = received.transaction;
       const known = references.get(unitId);

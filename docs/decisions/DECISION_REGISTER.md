@@ -32,6 +32,17 @@ Standing is scoped to the evidence and date in each row. Teddy’s [14 November 
 
 [Owner approval record](FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md) · [Remaining gates](OPEN_APPROVALS.md)
 
+## Owner-approved Part A amendments R1 and R2
+
+Teddy authorized these Lab-only amendments on 15 November 2026 for **Headless v0.3 Part A**. [Decision v0.2 §4.2](../design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md#42-which-responses-are-candidates)
+
+| ID | Approved scope | Reason |
+|---|---|---|
+| R1 | A human-controlled character may **Refuse** an offer while a needed fact is still missing. Clarify remains available for the first still-unasked question. | The human can walk away even while the fact is unknown. Section 4.2 previously listed only Clarify for that state. |
+| R2 | A rule-driven character **waits** while its question is unanswered and does not ask it again. After a delivered decline it **Refuses the original offer** once, naming the missing fact without stating its value. | A clarification conversation ends when its addressee declines. Repeating the same question keeps the proposal stuck without producing information. |
+
+An addressed human can Tell when they have the requested fact or Decline whether they have it or not. A human decline communicates the same outward reason in both cases. The rule-driven addressee uses §4.2 without scoring. It Tells a legitimately held fact and otherwise Declines, saying it does not have the fact. These rules apply to stock and marked-price information on exact received headless offer versions. The original decision specification remains the historical text. Part B needs separate explicit approval.
+
 ## Preflight reconciliation G01–G17
 
 The current dispositions preserve the known source conflicts and future verification gates. The owner-approved Lab rules govern the five M03 rows.
