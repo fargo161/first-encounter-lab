@@ -274,10 +274,14 @@ export function actorView(data, actorId) {
         : status,
     }));
   const ownAccount = data.ledger.accounts.find(account => account.id === actorId);
+  const till = actor.role === 'clerk' && roles.clerk.permissions.includes('take_payment')
+    ? data.ledger.accounts.find(account => account.id.startsWith('store_'))
+    : undefined;
 
   return freeze(copy({
     actor: { id: actor.id, name: actor.name, role: actor.role, controller: actor.controller },
     account: { kind: 'personal_cash', currency: data.ledger.currency, balanceMinor: ownAccount.balanceMinor },
+    ...(till && { storeTill: { kind: 'store_till', id: till.id, currency: data.ledger.currency, balanceMinor: till.balanceMinor } }),
     references: knownReferences(observations),
     observations,
     messages,

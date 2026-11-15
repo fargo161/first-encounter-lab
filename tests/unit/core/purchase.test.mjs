@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID, createPurchase,
 } from '../../../core/purchase.mjs';
@@ -1036,4 +1038,69 @@ test('known customer cash still controls settlement after accepting an above-lis
   const before = session.save();
   assert.equal(buyer.submit('command_00b5', 'pay', { reference: ref }).code, 'INSUFFICIENT_FUNDS');
   assert.equal(session.save(), before);
+});
+
+test('clerk sees only the authorized current till and separate personal cash under either controller', () => {
+  const storeId = 'store_0200';
+  for (const humanId of [BUYER_ID, CLERK_ID]) {
+    const options = { ...fixtureOptions(), humanId, store: { id: storeId, balanceMinor: 125 } };
+    options.units.forEach(unit => { unit.ownerId = storeId; });
+    const { session, submit } = harness(options);
+    const clerk = session.forActor(CLERK_ID);
+    const buyer = session.forActor(BUYER_ID);
+    const observer = session.forActor(BYSTANDER);
+    const tillBefore = { kind: 'store_till', id: storeId, currency: 'USD', balanceMinor: 125 };
+    assert.deepEqual(clerk.view().storeTill, tillBefore);
+    assert.deepEqual(clerk.view().account, { kind: 'personal_cash', currency: 'USD', balanceMinor: 50 });
+    for (const unauthorized of [buyer, observer]) {
+      assert.equal('storeTill' in unauthorized.view(), false);
+      assert.equal('storeTill' in unauthorized.view(storeId), false);
+      for (const id of [storeId, 'store_ffff']) {
+        assert.throws(() => unauthorized.menu({ id, version: 1 }), { code: 'STALE_PROPOSAL' });
+      }
+      assert.equal(unauthorized.submit('command_00a3', 'view', { actorId: storeId }).code, 'ACTION_UNAVAILABLE');
+    }
+    assert.throws(() => session.view(storeId), { code: 'UNKNOWN_ACTOR' });
+    assert.throws(() => session.forActor(storeId), { code: 'UNKNOWN_ACTOR' });
+    assert.equal(clerk.view().ledger, undefined);
+    assert.equal(clerk.view().accounts, undefined);
+    assert.deepEqual(Object.keys(clerk.view().storeTill).sort(), ['balanceMinor', 'currency', 'id', 'kind']);
+
+    const ref = reference(offered(submit));
+    committed(submit(humanId === CLERK_ID ? 'accept' : 'respond', { actorId: CLERK_ID, reference: ref }));
+    committed(submit('pay', { actorId: BUYER_ID, reference: ref }));
+    assert.deepEqual(clerk.view().storeTill, { ...tillBefore, balanceMinor: 425 });
+    assert.equal(clerk.view().account.balanceMinor, 50);
+    assert.equal(buyer.view().account.balanceMinor, 700);
+    assert.equal(buyer.view().storeTill, undefined);
+    assert.equal(observer.view().storeTill, undefined);
+
+    const fresh = createPurchase();
+    fresh.restore(session.save());
+    assert.deepEqual(fresh.forActor(CLERK_ID).view().storeTill, clerk.view().storeTill);
+  }
+});
+
+test('removing take_payment from the authored role withholds the till from the same clerk', () => {
+  const script = String.raw`
+    import assert from 'node:assert/strict';
+    import roles from './content/roles.json' with { type: 'json' };
+    assert.ok(roles.clerk.permissions.includes('take_payment'));
+    roles.clerk.permissions = roles.clerk.permissions.filter(permission => permission !== 'take_payment');
+    const { BUYER_ID, CLERK_ID, STORE_ID, createPurchase } = await import('./core/purchase.mjs');
+    const store = { id: STORE_ID, balanceMinor: 125 };
+    for (const humanId of [BUYER_ID, CLERK_ID]) {
+      const revoked = createPurchase({ humanId, store });
+      const clerk = revoked.forActor(CLERK_ID);
+      assert.equal(clerk.view().actor.role, 'clerk');
+      assert.equal(clerk.view().account.balanceMinor, 0);
+      assert.equal('storeTill' in clerk.view(), false);
+      assert.equal('storeTill' in clerk.view(STORE_ID), false);
+      assert.throws(() => clerk.menu({ id: STORE_ID, version: 1 }), { code: 'STALE_PROPOSAL' });
+    }
+  `;
+  execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+    cwd: fileURLToPath(new URL('../../../', import.meta.url)),
+    windowsHide: true,
+  });
 });

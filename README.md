@@ -1,37 +1,40 @@
+```yaml
+phase: headless_v0_3_part_a_A3
+authorization: part_a_A0_through_A4_only
+latest_reviewed_source: c77a19c5d2cf294279d1be9208343497bbb3246f
+tested_local_candidate: 5989e0511bbf1f67ba238c175b0bceeb836be7ac
+test_evidence: "A3 worktree on the A2 checkpoint, Node v24.22.1, 91 passing, 0 failures or skips"
+latest_report: docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md
+c6_status: approved_contract_real_runtime_and_shared_suite_pending
+stand_in_status: unbuilt
+next_owner_gate: a4_draft_then_independent_a7
+publication: local_only
+implementation_scope: headless_immediate_purchase_and_part_a_dialogue
+hold_deposit_meaning: awaiting_documentation
+part_b_authorized: false
+```
+
 # First Encounter Lab
 
-## Current status
+First Encounter Lab is a Trapstar gameplay tile. Actors keep separate knowledge, cash and judgments. KeyWrapping records what a character communicated. Encounter records agreement and the distinct payment and handover effects.
 
-- Scope is the local Headless Generalization v0.2 Steps 1–5 authorized by Teddy. The five implementation checkpoints and independent verification are complete. Teddy and Nova’s review is next. [Run scope](docs/runs/headless-generalization-v0-2/RUN_SCOPE.md)
-- Review branch is codex/headless-generalization-v0-2. The tested implementation commit is 4fbd313529bc23771d4c629eb452239110001348. Public baseline remains 1278b705302da2b1bbd8b0edcca62d63a66fc866.
-- 55 component tests and 12 independent A7 probes passed, 0 failed or skipped. Node 24.22.1 on Windows. The historical v0.1 runner passed 29 tests and retains its own saves and trace. [v0.1 report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md)
+## Headless capabilities
 
-First Encounter Lab is a Trapstar gameplay tile. A clerk and customer share one store state, while each only knows what they have legitimately received. BASED governs delivery. KeyWrapping records communicative meaning in one versioned expression, and Encounter records what happened.
-
-## What works
-
-- One immediate Pay-for-Give sale works with either initiator. Separate actor cash accounts, the till and individually owned and held units support multiple proposals and two different sales in one run. Pay and handover are separate native effects. Restore and exact receipt replay preserve the ledger.
-- Accept, Refuse, Counter and Clarify reach the listener through the same scoped message path. Counter only replaces its linked version and each actor has a two-Counter limit per chain.
-- The clerk uses the list-price floor. Above-list offers reach normal scoring, subject to the receiving actor’s known facts and policies. An external failure fixture records a paid-but-unfulfilled handover; restore and retry preserve a single debit. Scoped actor handles keep private policy and unseen state out of views.
-- Warmth and trust are directed and bounded. A received first-purchase cause is applied once per pair and recipient. The developer scorecard records priorities, personality, delivery, stored judgments, known circumstances and risk.
-- The rules-controlled shopper picks from legitimately observed products and authors its own immediate opening. The human-controlled clerk uses the same eligibility and settlement path. A separate human-customer run reproduces the same effects for equivalent choices. It can choose a second item when the preferred item is known unavailable or costs more than the shopper holds.
-
-New headless saves use kw-expression@1. Open an old v0.1 save with the runner at 9088cd2fd9bf162319e745853930f8ea2cc40375. [Format](docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md) · [$3 transaction comparison](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_KEYWRAPPING_MAPPING.md)
+- Customer and clerk can both initiate an immediate Pay-for-Give deal. Independent negotiations, exact versions, split settlement, safe failure/retry and deterministic save replay share the one native journal.
+- A missing stock or price fact can prompt one exact Clarify. The addressee can Tell a legitimately held fact or Decline. The asker learns only the attributed report and applies R1/R2 as authorized. Actual checkout checks canonical price, assets and control of the item.
+- A human shopper can Accept a price above marked list or Counter at the observed price. The clerk's below-list floor remains a hard restriction. The scoped clerk can see the store till through take_payment, with a separate personal cash account.
+- New saves use lab-headless-generalization-save@2 with kw-expression@1. Replay old @1 generalization saves with the v0.2 runner at c77a19c5d2cf294279d1be9208343497bbb3246f. The original v0.1 runner is at 9088cd2fd9bf162319e745853930f8ea2cc40375.
 
 ## Reproduce
 
-Select Node 24.22.1 and run from this review branch.
+Use Node v24.22.1 in the independent Lab checkout.
 
     node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs tests/unit/decisions/shopper.test.mjs tests/independent/headless-purchase.test.mjs
-    node docs/runs/headless-generalization-v0-2/generate-trace.mjs
 
-Historical v0.1 tests and trace generator run from the v0.1 checkout.
+## Source and scope
 
-## Source and integration gates
+- [Lab decision register](docs/decisions/DECISION_REGISTER.md) · [Format and field origins](docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md) · [Previous v0.2 handoff](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md)
+- Native M3 remains pinned at 76a92fd82ac5ec6f10748f0b439a5d661fff5ea5 with the historical IR3-25 qualification. The First Encounter Game producer stays at cc8371c3c497edcdcfb8a73ec7da9dad4663847a. [Original source lock](docs/provenance/SOURCE_LOCK.json)
+- The approved C6 contract, actual ROOM candidate, shared suite, matched browser baseline, official stand-in, UI and art have distinct gates. Claude's matched baseline is unavailable. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
 
-- M3 is pinned at 76a92fd82ac5ec6f10748f0b439a5d661fff5ea5. The Lab uses its native validation, journal, receipts and observation projection. The inherited IR3-25 result remains a qualified historical failure.
-- First Encounter Game is verified at cc8371c3c497edcdcfb8a73ec7da9dad4663847a. [Original source lock](docs/provenance/SOURCE_LOCK.json) · [Master design](FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md) · [Owner decisions](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md)
-- The real ROOM candidate and Nova’s shared C6 suite are pending. Claude’s matched browser baseline is unavailable. The approved C6 contract is the input for those gates. The official stand-in, playable UI, art, holds, deposits and return visits are outside this scope. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
-- A1 owns state, A2 expression and communication, and A3 policy. The Lead owns integration and this handoff. A7 independently verified the corrected Step 5 candidate in a fresh export. [Ownership plan](docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md)
-
-Read the [build report](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md), [transaction trace](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_TRACE.json) and [A7 review](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_A7_REVIEW.md). The stop remains in force for Teddy and Nova’s review.
+The current local authorization covers Part A only. The next gate is the remaining scoped checkpoint and independent review.
