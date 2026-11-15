@@ -270,3 +270,122 @@ test('controller assignment changes eligibility of the interface, with identical
   }
   assert.deepEqual(results[0], results[1]);
 });
+
+test('rules Refusal is actually delivered with actor-safe words and keeps the earlier terms', () => {
+  const options = fixtureOptions();
+  options.knowledge[1].available = false;
+  const { session, submit } = harness(options);
+  const ref = reference(offered(submit));
+  const before = session.inspect().data.ledger;
+  const result = committed(submit('respond', { actorId: CLERK_ID, reference: ref }));
+  assert.equal(result.type, 'refusal');
+  const received = session.forActor(BUYER_ID).view().observations.at(-1).receivedDetails.communication;
+  assert.equal(received.expression.function, 'REMARK');
+  assert.equal(received.expression.body.act, 'Refuse');
+  assert.match(received.content.text, /unavailable/i);
+  assert.doesNotMatch(JSON.stringify(received), /selectedVibe|candidates|score/);
+  assert.deepEqual(session.inspect().data.ledger, before);
+  assert.equal(session.inspect().data.proposals[0].status, 'refused');
+  assert.equal(session.inspect().data.messages[0].expression.function, 'OFFER');
+  assert.equal(submit('pay', { actorId: BUYER_ID, reference: ref }).code, 'STALE_PROPOSAL');
+});
+
+test('an actor requests genuinely missing price or stock and does not assent or learn hidden stock', () => {
+  for (const missing of ['list_price', 'stock']) {
+    const options = fixtureOptions();
+    if (missing === 'stock') delete options.knowledge[1].available;
+    else options.knowledge[1].priceKnown = false;
+    for (const humanId of [BUYER_ID, CLERK_ID]) {
+      const { session, submit } = harness({ ...options, humanId });
+      const ref = reference(offered(submit));
+      const asClerk = session.forActor(CLERK_ID);
+      assert.deepEqual(asClerk.menu(ref), ['Clarify']);
+      const response = humanId === CLERK_ID
+        ? submit('reply', { actorId: CLERK_ID, reference: ref, choice: 'Clarify' })
+        : submit('respond', { actorId: CLERK_ID, reference: ref });
+      assert.equal(committed(response).type, 'clarification');
+      const heard = session.view(BUYER_ID).observations.at(-1).receivedDetails.communication;
+      assert.equal(heard.expression.function, 'REQUEST');
+      assert.equal(heard.expression.body.act, 'Clarify');
+      assert.match(heard.content.text, missing === 'stock' ? /whether.*stock/i : /marked price/i);
+      assert.equal(heard.expression.body.target.proposalId, ref.id);
+      assert.equal(session.inspect().data.proposals[0].status, 'open');
+      assert.equal(submit('pay', { actorId: BUYER_ID, reference: ref }).code, 'STALE_PROPOSAL');
+    }
+  }
+});
+
+test('Counter creates an exact same-chain OFFER with the responding speaker and keeps another proposal open', () => {
+  const { session, submit } = harness(fixtureOptions());
+  const initial = reference(offered(submit, { amountMinor: 200 }));
+  const other = reference(offered(submit, { actorId: OTHER_BUYER }));
+  const counters = submit('respond', { actorId: CLERK_ID, reference: initial });
+  const changed = reference(counters);
+  assert.equal(counters.receipt.result.type, 'counter');
+  assert.deepEqual(changed, { id: initial.id, version: 2 });
+  const heard = session.view(BUYER_ID).observations.at(-1).receivedDetails.communication;
+  assert.equal(heard.expression.speaker, CLERK_ID);
+  assert.equal(heard.expression.function, 'OFFER');
+  assert.equal(exchangeTerms(heard.expression).amountMinor, 300);
+  assert.equal(heard.expression.proposal.parent.id, session.inspect().data.messages[0].id);
+  assert.deepEqual([...session.forActor(BUYER_ID).menu(changed)].sort(), ['Accept', 'Refuse']);
+  assert.equal(submit('accept', { actorId: BUYER_ID, reference: initial }).code, 'STALE_PROPOSAL');
+  assert.equal(session.inspect().data.proposals.find(proposal => proposal.id === other.id).status, 'open');
+  committed(submit('accept', { actorId: BUYER_ID, reference: changed }));
+  const expected = session.save();
+  const restored = createPurchase();
+  restored.restore(expected);
+  assert.deepEqual(restored.submit(counters.command), { status: 'replayed', receipt: counters.receipt });
+  assert.equal(restored.save(), expected);
+});
+
+test('the same menu enforces the two-Counter maximum per actor and chain for both controller assignments', () => {
+  for (const humanId of [BUYER_ID, CLERK_ID]) {
+    for (const firstResponder of [BUYER_ID, CLERK_ID]) {
+      const options = fixtureOptions();
+      options.knowledge[0].listedPriceMinor = 200;
+      options.knowledge[1].listedPriceMinor = 400;
+      const { session, submit } = harness({ ...options, humanId });
+      const sellerSpeaks = firstResponder === BUYER_ID;
+      const initiation = sellerSpeaks
+        ? offered(submit, { actorId: CLERK_ID, recipientId: BUYER_ID, amountMinor: 400 })
+        : offered(submit, { amountMinor: 200 });
+      let ref = reference(initiation);
+      let actorId = firstResponder;
+      for (let count = 0; count < 4; count++) {
+        assert.ok(session.forActor(actorId).menu(ref).includes('Counter'));
+        const args = { actorId, reference: ref };
+        const response = actorId === humanId ? submit('reply', { ...args, choice: 'Counter' }) : submit('respond', args);
+        ref = reference(response);
+        assert.equal(response.receipt.result.type, 'counter');
+        actorId = actorId === BUYER_ID ? CLERK_ID : BUYER_ID;
+      }
+      assert.equal(actorId, firstResponder);
+      assert.deepEqual(session.forActor(actorId).menu(ref), ['Refuse']);
+      assert.equal(session.decide(ref, actorId).candidates.find(candidate => candidate.act === 'Counter').rule, 'G05');
+      const args = { actorId, reference: ref };
+      if (actorId === humanId) {
+        assert.equal(submit('reply', { ...args, choice: 'Counter' }).code, 'RESPONSE_INELIGIBLE');
+        assert.equal(committed(submit('reply', { ...args, choice: 'Refuse' })).type, 'refusal');
+      } else {
+        assert.equal(committed(submit('respond', args)).type, 'refusal');
+      }
+      assert.equal(session.inspect().data.events.filter(event => event.type === 'counter').length, 4);
+    }
+  }
+});
+
+test('outward reply delivery derives from the replying character’s authored manner', () => {
+  const outputs = [];
+  for (const vibe of ['EA', 'SE']) {
+    const options = fixtureOptions();
+    options.actors[1].personality = { manner: { well: vibe, plain: vibe, badly: vibe } };
+    const { session, submit } = harness(options);
+    const ref = reference(offered(submit));
+    committed(submit('respond', { actorId: CLERK_ID, reference: ref }));
+    const heard = session.view(BUYER_ID).observations.at(-1).receivedDetails.communication;
+    outputs.push(heard.framing);
+    assert.equal(session.inspect().data.messages.at(-1).privateComposition.selectedVibe, vibe);
+  }
+  assert.notDeepEqual(outputs[0], outputs[1]);
+});

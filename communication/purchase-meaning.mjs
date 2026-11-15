@@ -9,10 +9,11 @@ import { projectObservation } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748
 export const EXPRESSION_SCHEMA = 'kw-expression@1';
 const PROMINENCE = freeze({ SUBTLE: 'understated', NUANCED: 'measured', OVERT: 'emphatic' });
 const CUES = freeze(copy(authoredCues));
+const CLARIFICATION = freeze({ stock: 'Is the item available?', list_price: 'What is the list price?' });
 
-function shape(value, keys) {
-  requireThat(isRecord(value) && Object.keys(value).length === keys.length &&
-    keys.every(key => Object.hasOwn(value, key)), 'UNSUPPORTED_TERMS');
+function shape(value, keys, optional = []) {
+  requireThat(isRecord(value) && keys.every(key => Object.hasOwn(value, key)) &&
+    Object.keys(value).every(key => keys.includes(key) || optional.includes(key)), 'UNSUPPORTED_TERMS');
 }
 
 function validateScope(scope) {
@@ -74,11 +75,25 @@ function readExchange(body) {
   };
 }
 
+function validateTarget(target, expression, expectedVersion) {
+  shape(target, ['proposalId', 'proposalVersion', 'expression', 'observationId']);
+  requireThat(target.proposalId === expression.proposal.id &&
+    target.proposalVersion === expectedVersion, 'UNSUPPORTED_TERMS');
+  id(target.observationId, 'observation');
+  validateReference(target.expression);
+  requireThat(target.expression.id !== expression.id &&
+    canonicalJson(target.expression.scope) === canonicalJson(expression.scope), 'UNSUPPORTED_TERMS');
+}
+
+function validateReason(reason) {
+  text(reason, 240);
+}
+
 /** Validate the complete executable headless subset. Explicit groups cannot be flattened into supported terms. */
 export function validateExpression(expression) {
   canonicalJson(expression);
   shape(expression, ['schema', 'id', 'version', 'scope', 'function', 'speaker', 'addressees',
-    'force', 'time', 'proposal', 'body']);
+    'force', 'time', 'proposal', 'body'], ['reply']);
   requireThat(expression.schema === EXPRESSION_SCHEMA && expression.version === 1, 'UNSUPPORTED_TERMS');
   validateScope(expression.scope);
   id(expression.id, 'message');
@@ -95,21 +110,35 @@ export function validateExpression(expression) {
     readExchange(expression.body);
     requireThat(expression.body.offered.actor === expression.speaker && expression.body.requested.actor === recipient,
       'WRONG_RECIPIENT');
+    if (Object.hasOwn(expression, 'reply')) {
+      const { target, reason } = expression.reply ?? {};
+      shape(expression.reply, ['target', 'reason']);
+      validateReason(reason);
+      validateTarget(target, expression, expression.proposal.version - 1);
+      requireThat(expression.proposal.version > 1 &&
+        canonicalJson(target.expression) === canonicalJson(expression.proposal.parent), 'UNSUPPORTED_TERMS');
+    }
     return true;
   }
 
-  requireThat(expression.function === 'REMARK' && expression.force === 'currentSelfPerformance' &&
-    expression.time.stance === 'current', 'UNSUPPORTED_TERMS');
+  requireThat(!Object.hasOwn(expression, 'reply') && expression.time.stance === 'current', 'UNSUPPORTED_TERMS');
   const { body, proposal } = expression;
-  shape(body, ['node', 'act', 'actor', 'recipient', 'target']);
-  requireThat(body.node === 'action' && body.act === 'Accept' &&
-    body.actor === expression.speaker && body.recipient === recipient, 'UNSUPPORTED_TERMS');
-  shape(body.target, ['proposalId', 'proposalVersion', 'expression', 'observationId']);
-  requireThat(body.target.proposalId === proposal.id && body.target.proposalVersion === proposal.version, 'UNSUPPORTED_TERMS');
-  id(body.target.observationId, 'observation');
-  validateReference(body.target.expression);
-  requireThat(body.target.expression.id !== expression.id &&
-    canonicalJson(body.target.expression.scope) === canonicalJson(expression.scope), 'UNSUPPORTED_TERMS');
+  const actionFields = ['node', 'act', 'actor', 'recipient', 'target'];
+  requireThat(isRecord(body), 'UNSUPPORTED_TERMS');
+  if (body.act === 'Clarify') {
+    shape(body, [...actionFields, 'missing', 'reason']);
+    requireThat(expression.function === 'REQUEST' && expression.force === 'request' &&
+      Object.hasOwn(CLARIFICATION, body.missing), 'UNSUPPORTED_TERMS');
+  } else {
+    const remarkFields = body.act === 'Refuse' ? [...actionFields, 'reason'] : actionFields;
+    shape(body, remarkFields, body.act === 'Accept' ? ['reason'] : []);
+    requireThat(expression.function === 'REMARK' && expression.force === 'currentSelfPerformance' &&
+      (body.act === 'Accept' || body.act === 'Refuse'), 'UNSUPPORTED_TERMS');
+  }
+  requireThat(body.node === 'action' && body.actor === expression.speaker &&
+    body.recipient === recipient, 'UNSUPPORTED_TERMS');
+  if (Object.hasOwn(body, 'reason')) validateReason(body.reason);
+  validateTarget(body.target, expression, proposal.version);
   return true;
 }
 
@@ -174,7 +203,7 @@ function messageRecord({ sequence, delivery }, expression, label) {
 }
 
 /** The caller supplies actor-known references and verifies authority at the Encounter boundary. */
-export function compileOffer(input) {
+function offerExpression(input) {
   const { terms, proposal, speaker, label } = input;
   canonicalJson(terms);
   shape(terms, ['buyerId', 'sellerId', 'storeId', 'productId', 'unitId', 'amountMinor', 'currency']);
@@ -199,8 +228,11 @@ export function compileOffer(input) {
   };
   const [offered, requested] = speaker === terms.buyerId ? [pay, give] : [give, pay];
   const body = { node: 'exchange', offered, requested };
-  const expression = expressionRecord(input, 'OFFER', 'proposal', 'future', proposal, body);
-  return messageRecord(input, expression, label);
+  return expressionRecord(input, 'OFFER', 'proposal', 'future', proposal, body);
+}
+
+export function compileOffer(input) {
+  return messageRecord(input, offerExpression(input), input.label);
 }
 
 function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, receipt, reference }) {
@@ -208,6 +240,7 @@ function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, rec
     Object.hasOwn(reference, 'id') && Object.hasOwn(reference, 'version'), 'AMBIGUOUS_ASSENT');
   requireThat(offer?.expression?.function === 'OFFER', 'STALE_PROPOSAL');
   const expression = offer.expression;
+  validateExpression(expression);
   const { proposal } = expression;
   requireThat(reference.id === proposal.id && reference.version === proposal.version &&
     canonicalJson(expression.scope) === canonicalJson(scope), 'STALE_PROPOSAL');
@@ -224,24 +257,66 @@ function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, rec
   return expression;
 }
 
-/** The trusted runtime supplies the currently eligible Offer and the actual recipient receipt. */
-export function compileAcceptance(input) {
+function receivedTarget(expression, receipt) {
+  return {
+    proposalId: expression.proposal.id,
+    proposalVersion: expression.proposal.version,
+    expression: expressionReference(expression),
+    observationId: receipt.id,
+  };
+}
+
+function compileResponse(input, act) {
   const offer = validateReceivedOffer(input);
-  const { speaker, recipient, receipt } = input;
+  const { speaker, recipient, receipt, reason } = input;
   const body = {
     node: 'action',
-    act: 'Accept',
+    act,
     actor: speaker,
     recipient,
-    target: {
-      proposalId: offer.proposal.id,
-      proposalVersion: offer.proposal.version,
-      expression: expressionReference(offer),
-      observationId: receipt.id,
-    },
+    target: receivedTarget(offer, receipt),
   };
-  const expression = expressionRecord(input, 'REMARK', 'currentSelfPerformance', 'current', offer.proposal, body);
+  if (reason !== undefined || act !== 'Accept') {
+    validateReason(reason);
+    body.reason = reason;
+  }
+  const clarify = act === 'Clarify';
+  if (clarify) body.missing = input.missing;
+  const expression = expressionRecord(input, clarify ? 'REQUEST' : 'REMARK',
+    clarify ? 'request' : 'currentSelfPerformance', 'current', offer.proposal, body);
   return messageRecord(input, expression, null);
+}
+
+/** The trusted runtime supplies the currently eligible Offer and the actual recipient receipt. */
+export function compileAcceptance(input) {
+  return compileResponse(input, 'Accept');
+}
+
+export function compileRefusal(input) {
+  return compileResponse(input, 'Refuse');
+}
+
+export function compileClarification(input) {
+  return compileResponse(input, 'Clarify');
+}
+
+export function compileCounter(input) {
+  const original = validateReceivedOffer(input);
+  const terms = exchangeTerms(original);
+  const expression = offerExpression(input);
+  const updated = readExchange(expression.body);
+  const target = receivedTarget(original, input.receipt);
+  requireThat(expression.proposal.id === target.proposalId &&
+    expression.proposal.version === target.proposalVersion + 1, 'STALE_PROPOSAL');
+  const { amountMinor, ...materialRoles } = updated;
+  requireThat(amountMinor !== terms.amountMinor &&
+    canonicalJson(materialRoles) === canonicalJson({
+      buyerId: terms.buyerId, sellerId: terms.sellerId, storeId: terms.storeId,
+      productId: terms.productId, unitId: terms.unitId, currency: terms.currency,
+    }), 'UNSUPPORTED_TERMS');
+  validateReason(input.reason);
+  expression.reply = { target, reason: input.reason };
+  return messageRecord(input, expression, input.label);
 }
 
 export function outwardCommunication(record) {
@@ -258,16 +333,23 @@ export function outwardCommunication(record) {
   if (isOffer) {
     text(record.label, 120);
     const { amountMinor, currency, unitId } = exchangeTerms(expression);
-    line = 'Offers ' + expression.body.offered.act + ' in exchange for ' +
+    const opening = expression.reply ? 'Counters with ' : 'Offers ';
+    line = opening + expression.body.offered.act + ' in exchange for ' +
       expression.body.requested.act + ', ' + amountMinor + ' ' + minorUnit(currency) +
       ' (' + currency + ') for ' + record.label + ' (' + unitId + ').';
   } else {
     requireThat(record.label === null, 'UNSUPPORTED_TERMS');
-    line = 'Accepts proposal ' + proposalId + ', version ' + version + '.';
+    if (expression.body.act === 'Clarify') {
+      line = CLARIFICATION[expression.body.missing];
+    } else {
+      line = expression.body.act + 's proposal ' + proposalId + ', version ' + version + '.';
+    }
   }
+  const reason = expression.reply?.reason ?? expression.body.reason;
+  if (reason) line += ' ' + reason;
   return freeze(copy({
     expression,
-    content: { kind: isOffer ? 'proposal' : 'response', text: line },
+    content: { kind: isOffer ? 'proposal' : expression.function === 'REQUEST' ? 'question' : 'response', text: line },
     framing: style.cues,
     prominence: PROMINENCE[privateComposition.selectedSalience],
   }));

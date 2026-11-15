@@ -3,141 +3,179 @@ import personalities from '../content/personalities.json' with { type: 'json' };
 import { freeze } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 
 export const CLERK_PROFILE = freeze({
-  id: 'store-clerk/default-v0.1',
+  id: 'store-clerk/default-v0.2',
   role: roles.clerk,
   personality: personalities.clerk
 });
 
-// Restricted to the responses that this headless slice can propose.
+export const CUSTOMER_PROFILE = freeze({
+  id: 'shopper/default-v0.2',
+  role: roles.customer,
+  personality: personalities.customer
+});
+
+export function purchaseProfile(role) {
+  if (role === 'clerk') return CLERK_PROFILE;
+  if (role === 'customer') return CUSTOMER_PROFILE;
+  return null;
+}
+
 const TIE_ORDER = freeze({
-  cautious: ['Refuse', 'Accept', 'Clarify'],
-  even: ['Accept', 'Refuse', 'Clarify'],
-  obliging: ['Accept', 'Refuse', 'Clarify']
+  cautious: ['Refuse', 'Defer', 'Counter', 'Accept'],
+  even: ['Counter', 'Defer', 'Accept', 'Refuse'],
+  obliging: ['Accept', 'Counter', 'Defer', 'Refuse']
 });
 
 function deliveryNudge(cues, prominence, tastes) {
-  const fit = cues.reduce((sum, cue) => {
-    const taste = Object.hasOwn(tastes, cue.kind) ? tastes[cue.kind] : 0;
-    return sum + taste;
-  }, 0);
+  const fit = cues.reduce((sum, cue) => sum + (Object.hasOwn(tastes, cue.kind) ? tastes[cue.kind] : 0), 0);
   return prominence === 'understated' && Math.abs(fit) < 2 ? 0 : Math.sign(fit);
 }
 
-function scoreRows(act, profile, warmth, observationIds) {
-  const effect = act === 'Accept' ? 1 : -1;
+function replyDelivery(effectiveWarmth, manner) {
+  const mood = effectiveWarmth > 0 ? 'well' : effectiveWarmth < 0 ? 'badly' : 'plain';
+  return { vibe: manner[mood], salience: Math.abs(effectiveWarmth) === 3 ? 'OVERT' : 'NUANCED' };
+}
+
+function scoredRows(act, { profile, warmth, evidenceObservationIds, offer, budgetMinor }) {
+  const goodwillEffect = { Accept: 1, Refuse: -1, Counter: 0 }[act];
+  const salesEffect = act === 'Refuse' ? -1 : 1;
+  const budgetEffect = Number.isSafeInteger(budgetMinor) && act === 'Accept'
+    ? Math.sign(budgetMinor - offer.amountMinor)
+    : 0;
   const impacts = {
-    keepJob: { effect: 0, evidence: 'Ordinary exact-price exchange applies no discouraged policy.' },
-    makeMoney: { effect, evidence: 'Observed list price and available stock support an immediate sale.' },
-    helpCustomers: { effect, evidence: 'The received offer states what the customer wants.' },
-    avoidExtraWork: { effect: 0, evidence: 'Ordinary exchange adds no ongoing work.' }
+    keepJob: [0, 'This immediate exchange has no discouraged terms.'],
+    makeMoney: [salesEffect, 'An immediate sale would bring money into the store.'],
+    helpCustomers: [goodwillEffect, 'I considered whether these terms give the customer what they asked for.'],
+    avoidExtraWork: [0, 'An immediate sale leaves me nothing to track later.'],
+    getWant: [salesEffect, 'I considered whether these terms get me the item.'],
+    keepBudget: [budgetEffect, 'I considered what the price means for my budget.'],
+    stayOnTerms: [goodwillEffect, 'I considered whether these terms give the other person what they asked for.'],
+    saveTime: [0, 'An immediate exchange requires no later visit.']
   };
-  const priorities = Object.entries(profile.role.priorities).map(([factor, baseWeight]) => ({
-    factor,
-    weight: baseWeight + (profile.personality.priorityNudges[factor] ?? 0),
-    effect: impacts[factor].effect,
-    evidence: impacts[factor].evidence,
-    profileId: profile.id,
-    observationIds: [...observationIds]
-  }));
-  const goodwill = {
-    factor: 'goodwill',
-    weight: warmth.effective,
-    effect,
-    evidence: 'Actor-local warmth and the received outward delivery cues.',
-    profileId: profile.id,
-    observationIds: [observationIds[0]]
-  };
-  return [...priorities, goodwill].map(row => ({
-    ...row, points: row.weight === 0 || row.effect === 0 ? 0 : row.weight * row.effect
-  }));
+  const rows = Object.entries(profile.role.priorities).map(([factor, baseWeight]) => {
+    const [effect, evidence] = impacts[factor];
+    return {
+      factor, baseWeight, weight: baseWeight + (profile.personality.priorityNudges[factor] ?? 0),
+      effect, evidence, profileId: profile.id, observationIds: [...evidenceObservationIds]
+    };
+  });
+  rows.push({
+    factor: 'goodwill', weight: warmth.effective, effect: goodwillEffect,
+    evidence: 'How this exchange would affect the other person matters to me.',
+    profileId: profile.id, observationIds: evidenceObservationIds.slice(0, 1)
+  });
+  return rows.map(row => ({ ...row, points: row.weight && row.effect ? row.weight * row.effect : 0 }));
 }
 
-function candidate(act, eligible, reason, rows = []) {
-  return { act, eligible, reason, rows, score: rows.length ? rows.reduce((sum, row) => sum + row.points, 0) : null };
+function candidate(act, eligible, reason, details = {}) {
+  return { act, eligible, reason, rows: [], score: null, ...details };
 }
 
-/**
- * A narrow M3-style policy: filter from the actor's scoped evidence, then rank.
- * The caller supplies received offer cues and the clerk's own product observation.
- * This function neither reads the ledger nor commits a response.
- */
-export function chooseClerkResponse(view) {
-  const { actorId, role, profile, offer, product } = view;
-  const { proposalId, version, productId, amountMinor, observationId, cues, prominence } = offer;
-  const { leaning, deliveryTastes } = profile.personality;
-  const tieOrder = TIE_ORDER[leaning];
+function excluded(act, reason, rule, exclusionClass = 'cannot') {
+  return candidate(act, false, reason, { exclusionClass, rule });
+}
+
+function rankScored(candidates, tieOrder, omittedFactor) {
+  const score = entry => entry.score - (entry.rows.find(row => row.factor === omittedFactor)?.points ?? 0);
+  return [...candidates].sort((a, b) => score(b) - score(a) || tieOrder.indexOf(a.act) - tieOrder.indexOf(b.act));
+}
+
+function rankedReason(winner, scored, tieOrder, acceptanceBlock) {
+  if (acceptanceBlock) return { reason: acceptanceBlock.text, reasonRule: acceptanceBlock.rule };
+  const changedWinner = winner.rows.find(row => rankScored(scored, tieOrder, row.factor)[0].act !== winner.act);
+  if (changedWinner) return { reason: changedWinner.evidence, reasonFactor: changedWinner.factor };
+  const originalTerms = scored.find(entry => entry.act === 'Accept') ?? winner;
+  const opposing = originalTerms.rows.filter(row => row.points < 0).sort((a, b) => a.points - b.points)[0];
+  return opposing
+    ? { reason: opposing.evidence, reasonFactor: opposing.factor }
+    : { reason: winner.reason };
+}
+
+function marketRestriction(role, profile, product, amountMinor) {
+  const permission = role === 'clerk'
+    ? ['sell_stock', 'take_payment']
+    : role === 'customer' ? ['buy_stock'] : [];
+  if (!permission.length || profile?.role.id !== role ||
+      !permission.every(action => profile.role.permissions.includes(action))) {
+    return { text: 'My role does not permit this exchange.', rule: 'M1', class: 'may_not' };
+  }
+  if (product?.available === false) {
+    return { text: 'I have been told this item is unavailable.', rule: 'C4', class: 'cannot' };
+  }
+  if (product?.priceMinor == null) return null;
+  if (role === 'clerk' && profile.role.exactListPrice && amountMinor !== product.priceMinor) {
+    return { text: 'I can only sell at the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
+  }
+  if (role === 'customer' && profile.role.maxListPrice && amountMinor > product.priceMinor) {
+    return { text: 'I will not pay above the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
+  }
+  return null;
+}
+
+/** Rank from the responding actor's received facts; selecting never delivers or commits an act. */
+export function choosePurchaseResponse(view) {
+  const { actorId, role, profile = purchaseProfile(role), offer, product, counterCount = 0 } = view;
+  const { proposalId, version, productId, amountMinor, observationId, cues = [], prominence = 'measured' } = offer;
   const knownProduct = product?.productId === productId ? product : null;
   const evidenceObservationIds = [...new Set([observationId, knownProduct?.observationId].filter(Boolean))];
-  const maySell = role === 'clerk' && profile.role.id === role &&
-    profile.role.permissions.includes('sell_stock') && profile.role.permissions.includes('take_payment');
-  const priceKnown = knownProduct?.priceMinor != null;
-  const stockKnown = knownProduct?.available === true || knownProduct?.available === false;
-
-  let restriction = null;
-  if (!maySell) {
-    restriction = 'This actor has no clerk permission to sell store stock and take payment.';
-  } else if (knownProduct?.available === false) {
-    restriction = 'The clerk received an observation that the item is unavailable.';
-  } else if (priceKnown && profile.role.exactListPrice && amountMinor !== knownProduct.priceMinor) {
-    restriction = 'This offer differs from the list price in the clerk’s product observation.';
-  }
-
-  const needsClarification = !restriction && (!priceKnown || !stockKnown);
-  const clarification = !priceKnown
-    ? 'The clerk needs a product and list-price observation to verify the offer.'
-    : 'The clerk needs current stock information before choosing a response.';
+  const personality = (profile ?? CLERK_PROFILE).personality;
+  const { leaning, deliveryTastes, manner } = personality;
+  const tieOrder = TIE_ORDER[leaning];
   const storedWarmth = view.warmth ?? 0;
-  const nudge = deliveryNudge(cues, prominence ?? 'measured', deliveryTastes);
-  const warmth = {
-    stored: storedWarmth,
-    nudge,
-    effective: Math.max(-3, Math.min(3, storedWarmth + nudge))
-  };
+  const nudge = deliveryNudge(cues, prominence, deliveryTastes);
+  const warmth = { stored: storedWarmth, nudge, effective: Math.max(-3, Math.min(3, storedWarmth + nudge)) };
 
-  let ranked;
-  let notes;
-  if (restriction) {
-    ranked = [candidate('Refuse', true, restriction)];
-    notes = [
-      candidate('Accept', false, restriction),
-      candidate('Clarify', false, 'The known restriction already answers this offer.')
-    ];
-  } else if (needsClarification) {
-    ranked = [
-      candidate('Clarify', true, clarification),
-      ...(knownProduct ? [candidate('Accept', true, 'No known restriction bars acceptance. Clarification comes first.')] : []),
-      candidate('Refuse', true, 'The clerk may decline an unverified offer.')
-    ];
-    notes = knownProduct ? [] : [candidate('Accept', false, 'The clerk lacks a scoped product reference to verify acceptance.')];
-  } else {
-    const purchaseReason = 'The received offer matches the observed list price and the clerk knows the item is available.';
-    ranked = [
-      candidate('Accept', true, purchaseReason, scoreRows('Accept', profile, warmth, evidenceObservationIds)),
-      candidate('Refuse', true, 'The clerk may decline the sale.', scoreRows('Refuse', profile, warmth, evidenceObservationIds))
-    ].sort((a, b) => b.score - a.score || tieOrder.indexOf(a.act) - tieOrder.indexOf(b.act));
-    notes = [candidate('Clarify', false, 'The clerk already knows the required product, price and availability.')];
+  const restriction = marketRestriction(role, profile, knownProduct, amountMinor);
+  let missing = null;
+  if (!restriction) {
+    if (knownProduct?.priceMinor == null) missing = 'list_price';
+    else if (role === 'clerk' && knownProduct?.available == null) missing = 'stock';
   }
+  const needsStock = missing === 'stock';
+  const clarification = needsStock ? 'I need to know whether this item is in stock.' : 'I need to know the marked price of this item.';
+  const refusal = restriction?.text ?? 'I am passing on this exchange.';
+  const noCounter = counterCount >= 2 || restriction?.counter == null;
+  const noCounterReason = counterCount >= 2
+    ? 'I have already made two Counters in this negotiation.'
+    : 'My role has no different supported terms to propose.';
+  const options = [
+    restriction
+      ? excluded('Accept', restriction.text, restriction.rule, restriction.class)
+      : missing
+        ? excluded('Accept', clarification, 'C7')
+        : candidate('Accept', true, 'I accept the immediate exchange on these terms.'),
+    missing ? excluded('Refuse', clarification, 'C7') : candidate('Refuse', true, refusal),
+    missing
+      ? excluded('Counter', clarification, 'C7')
+      : noCounter
+        ? excluded('Counter', noCounterReason, counterCount >= 2 ? 'G05' : '4.3')
+        : candidate('Counter', true, restriction.text, { amountMinor: restriction.counter }),
+    missing
+      ? candidate('Clarify', true, clarification)
+      : excluded('Clarify', restriction ? 'A known restriction answers the offer.' : 'I have the required facts.', '4.2'),
+    excluded('Defer', 'Deferred responses are outside this immediate exchange.', 'C7'),
+    excluded('Acknowledge', 'Acknowledge is outside this immediate exchange.', 'C7')
+  ];
 
-  const selected = ranked[0];
-  const tied = ranked.length > 1 && selected.score !== null && selected.score === ranked[1].score;
-  const opposedAcceptance = ranked.find(entry => entry.act === 'Accept')?.rows.find(row => row.points < 0);
-  const reason = tied
-    ? `The highest scores tie. The clerk’s ${leaning} preference ranks ${selected.act} first.`
-    : selected.act === 'Refuse' && !restriction && opposedAcceptance?.factor === 'goodwill'
-      ? 'Actor-local goodwill weighs against accepting the offer.'
-      : selected.reason;
+  const inputs = { profile: profile ?? CLERK_PROFILE, warmth, evidenceObservationIds, offer, budgetMinor: view.budgetMinor };
+  const eligible = options.filter(entry => entry.eligible);
+  const ranked = eligible.length === 1 ? eligible : rankScored(eligible.map(entry => {
+    const rows = scoredRows(entry.act, inputs);
+    return { ...entry, rows, score: rows.reduce((sum, row) => sum + row.points, 0) };
+  }), tieOrder);
+  const winner = ranked[0];
+  const tied = ranked.length > 1 && winner.score === ranked[1].score;
+  const reason = winner.rows.length
+    ? rankedReason(winner, ranked, tieOrder, restriction)
+    : { reason: winner.reason, ...(restriction && { reasonRule: restriction.rule }) };
+
   return freeze({
-    actorId,
-    proposalId,
-    version,
-    selected: selected.act,
-    reason,
-    evidenceObservationIds,
-    warmth,
+    actorId, proposalId, version, selected: winner.act, ...reason,
+    missing, evidenceObservationIds, warmth, delivery: replyDelivery(warmth.effective, manner),
     tieRule: { leaning, order: [...tieOrder], used: tied },
     candidates: [
-      ...ranked.map((entry, index) => ({ ...entry, rank: index + 1 })),
-      ...notes.map(entry => ({ ...entry, rank: null }))
+      ...ranked.map((entry, index) => ({ ...entry, ...(index === 0 && reason), rank: index + 1 })),
+      ...options.filter(entry => !entry.eligible).map(entry => ({ ...entry, rank: null }))
     ]
   });
 }

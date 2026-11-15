@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import products from '../content/products.json' with { type: 'json' };
-import { canonicalJson, copy, fields, freeze, id, integer, requireThat, text } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
+import { BASED_CATALOG, canonicalJson, copy, fields, freeze, id, integer, requireThat, text } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { projectObservation, recipientHistory } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs';
 import { exchangeTerms, outwardCommunication } from '../communication/purchase-meaning.mjs';
 
@@ -41,9 +41,28 @@ function distinct(entries, key) {
   requireThat(Array.isArray(entries) && entries.length === new Set(entries.map(key)).size, 'INVALID_SCENARIO');
 }
 
+function validatePersonality(personality) {
+  fields(personality, [], ['leaning', 'priorityNudges', 'deliveryTastes', 'manner']);
+  if (Object.hasOwn(personality, 'leaning')) {
+    requireThat(['cautious', 'even', 'obliging'].includes(personality.leaning), 'INVALID_PERSONALITY');
+  }
+  for (const key of ['priorityNudges', 'deliveryTastes']) {
+    if (!Object.hasOwn(personality, key)) continue;
+    const values = personality[key];
+    fields(values, [], Object.keys(values ?? {}));
+    requireThat(Object.values(values).every(value => [-1, 0, 1].includes(value)), 'INVALID_PERSONALITY');
+    if (key === 'priorityNudges') requireThat(Object.keys(values).length <= 2, 'INVALID_PERSONALITY');
+  }
+  if (Object.hasOwn(personality, 'manner')) {
+    fields(personality.manner, [], ['well', 'plain', 'badly']);
+    requireThat(Object.values(personality.manner).every(vibe => Object.hasOwn(BASED_CATALOG, vibe)), 'INVALID_PERSONALITY');
+  }
+}
+
 export function configureScenario(options = {}) {
   fields(options, [], ['runId', ...Object.keys(defaults)]);
   const settings = { runId: 'run_' + randomUUID().replaceAll('-', ''), ...copy(defaults), ...copy(options) };
+  if (options.actors?.length && !Object.hasOwn(options, 'humanId')) settings.humanId = settings.actors[0].id;
   const { actors, humanId, store, currency, runId } = settings;
   id(runId, 'run');
   requireThat(/^[A-Z]{3}$/.test(currency) && typeof currency === 'string', 'INVALID_CURRENCY');
@@ -53,11 +72,12 @@ export function configureScenario(options = {}) {
   distinct(actors, actor => actor.id);
   requireThat(actors.length > 0 && (humanId === null || actors.some(actor => actor.id === humanId)), 'INVALID_CONTROLLER');
   for (const actor of actors) {
-    fields(actor, ['id', 'name', 'role', 'balanceMinor']);
+    fields(actor, ['id', 'name', 'role', 'balanceMinor'], ['personality']);
     id(actor.id, 'actor');
     text(actor.name, 100);
     requireThat(['clerk', 'customer', 'observer'].includes(actor.role), 'INVALID_ROLE');
     integer(actor.balanceMinor);
+    if (Object.hasOwn(actor, 'personality')) validatePersonality(actor.personality);
   }
   integer(actors.reduce((total, actor) => total + actor.balanceMinor, store.balanceMinor));
 
@@ -80,10 +100,14 @@ export function configureScenario(options = {}) {
   }
   distinct(settings.knowledge, entry => [entry.actorId, entry.unitId].join('/'));
   for (const grant of settings.knowledge) {
-    fields(grant, ['actorId', 'unitId'], ['available', 'priceKnown']);
+    fields(grant, ['actorId', 'unitId'], ['available', 'priceKnown', 'listedPriceMinor']);
     requireThat(settings.units.some(unit => grant.unitId === unit.id) && actors.some(actor => actor.id === grant.actorId), 'INVALID_GRANT');
     requireThat(!Object.hasOwn(grant, 'available') || typeof grant.available === 'boolean', 'INVALID_GRANT');
     requireThat(!Object.hasOwn(grant, 'priceKnown') || typeof grant.priceKnown === 'boolean', 'INVALID_GRANT');
+    if (Object.hasOwn(grant, 'listedPriceMinor')) {
+      integer(grant.listedPriceMinor);
+      requireThat(grant.listedPriceMinor > 0 && grant.priceKnown !== false, 'INVALID_GRANT');
+    }
   }
   requireThat(typeof settings.failFirstHandover === 'boolean');
   return freeze(settings);
@@ -124,7 +148,7 @@ export function observeEvent(data, event, observerId, keys, roots = []) {
 export function initialState(settings) {
   const { actors, humanId, store, units, products: catalog, knowledge, currency } = settings;
   const data = {
-    actors: actors.map(({ id, name, role }) => ({ id, name, role, controller: id === humanId ? 'human' : 'rules' })),
+    actors: actors.map(({ id, name, role, personality = {} }) => ({ id, name, role, personality: copy(personality), controller: id === humanId ? 'human' : 'rules' })),
     ledger: {
       currency,
       accounts: [...actors.map(({ id, balanceMinor }) => ({ id, balanceMinor })), copy(store)],
@@ -144,7 +168,7 @@ export function initialState(settings) {
       provenance: 'scenario_catalog_listing',
       product: {
         productId, label, kind, unitId: unit.id,
-        ...(grant.priceKnown !== false && { priceMinor }),
+        ...(grant.priceKnown !== false && { priceMinor: grant.listedPriceMinor ?? priceMinor }),
         ...(Object.hasOwn(grant, 'available') && { available: grant.available }),
       },
     });
@@ -185,7 +209,7 @@ export function actorView(data, actorId) {
   const ownAccount = data.ledger.accounts.find(account => account.id === actorId);
 
   return freeze(copy({
-    actor,
+    actor: { id: actor.id, name: actor.name, role: actor.role, controller: actor.controller },
     account: { kind: 'personal_cash', currency: data.ledger.currency, balanceMinor: ownAccount.balanceMinor },
     references: knownReferences(observations),
     observations,

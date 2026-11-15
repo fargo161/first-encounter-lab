@@ -9,5 +9,16 @@
       "avoidExtraWork": 1
     },
     "exactListPrice": true
+  },
+  "customer": {
+    "id": "customer",
+    "permissions": ["buy_stock"],
+    "priorities": {
+      "getWant": 4,
+      "keepBudget": 3,
+      "stayOnTerms": 2,
+      "saveTime": 1
+    },
+    "maxListPrice": true
   }
 }

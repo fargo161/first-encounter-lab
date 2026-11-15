@@ -1,9 +1,10 @@
 import { canonicalJson, ContractError, copy, fields, freeze, id, isRecord, requireThat } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { createRun, executeCommand, validateRun } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs';
 import {
-  compileAcceptance, compileOffer, exchangeTerms, expressionReference, observePurchaseMessage,
+  compileAcceptance, compileClarification, compileCounter, compileOffer, compileRefusal,
+  exchangeTerms, expressionReference, observePurchaseMessage,
 } from '../communication/purchase-meaning.mjs';
-import { chooseClerkResponse, CLERK_PROFILE } from '../decisions/clerk.mjs';
+import { choosePurchaseResponse, purchaseProfile } from '../decisions/clerk.mjs';
 import {
   actorView, configureScenario, initialState, nextId, observeEvent, recordEvent, scenarioPackageRef, validateLedger,
 } from './scenario.mjs';
@@ -16,6 +17,7 @@ const actions = freeze({
   offer: 'send_message',
   accept: 'send_message',
   respond: 'send_message',
+  reply: 'send_message',
   pay: 'perform_action',
   handover: 'perform_action',
 });
@@ -23,7 +25,7 @@ const actions = freeze({
 const safeRuleErrors = new Set([
   'AMBIGUOUS_ASSENT', 'STALE_PROPOSAL', 'WRONG_ACTOR', 'WRONG_CONTROLLER', 'WRONG_RECIPIENT',
   'UNKNOWN_REFERENCE', 'UNSUPPORTED_TERMS', 'UNAVAILABLE_EXPRESSION', 'NO_RECEIVING_PATH',
-  'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_NOT_ACCEPTED', 'INVALID_TERMS',
+  'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_INELIGIBLE', 'INVALID_TERMS',
   'INSUFFICIENT_FUNDS', 'OUT_OF_STOCK', 'PAYMENT_REQUIRED', 'ALREADY_PAID', 'ALREADY_FULFILLED',
 ]);
 
@@ -117,6 +119,21 @@ function makeOffer(data, command, settings) {
   return messageResult(event, proposal, message, observation);
 }
 
+function actorProfile(actor) {
+  const base = purchaseProfile(actor.role);
+  const authored = actor.personality;
+  return {
+    ...base,
+    personality: {
+      ...base.personality,
+      ...authored,
+      priorityNudges: { ...base.personality.priorityNudges, ...authored.priorityNudges },
+      deliveryTastes: { ...base.personality.deliveryTastes, ...authored.deliveryTastes },
+      manner: { ...base.personality.manner, ...authored.manner },
+    },
+  };
+}
+
 function responseContext(data, proposal, actorId) {
   requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
   const local = actorView(data, actorId);
@@ -125,50 +142,93 @@ function responseContext(data, proposal, actorId) {
   const receipt = local.observations.find(entry => entry.source.kind === 'message' && entry.source.id === offer.id);
   requireThat(receipt, 'NO_RECEIVING_PATH');
   const { expression, framing, prominence } = receipt.receivedDetails.communication;
-  const { productId, unitId, amountMinor } = exchangeTerms(expression);
-  const product = local.references.find(entry => entry.unitId === unitId);
-  const input = {
-    actorId, role: local.actor.role, profile: CLERK_PROFILE,
-    offer: { proposalId: proposal.id, version: proposal.version, productId, amountMinor, observationId: receipt.id, cues: framing, prominence },
+  const terms = exchangeTerms(expression);
+  const product = local.references.find(entry => entry.unitId === terms.unitId);
+  const counterCount = data.events.filter(event => event.type === 'counter' &&
+    event.details.proposalId === proposal.id && event.details.actorId === actorId).length;
+  const actor = data.actors.find(entry => entry.id === actorId);
+  const decision = choosePurchaseResponse({
+    actorId, role: actor.role, profile: actorProfile(actor), counterCount,
+    offer: {
+      proposalId: proposal.id, version: proposal.version, productId: terms.productId, amountMinor: terms.amountMinor,
+      observationId: receipt.id, cues: framing, prominence,
+    },
     product,
-  };
-  const decision = local.actor.role === 'clerk' ? chooseClerkResponse(input) : {
-    actorId, proposalId: proposal.id, version: proposal.version,
-    selected: product.available === false ? 'Refuse' : 'Accept',
-    candidates: [{ act: 'Accept', eligible: product.available !== false }],
-  };
-  return { actor: local.actor, decision, offer, receipt };
+  });
+  return { actor, decision, offer, receipt, terms, product };
 }
 
-function acceptOffer(data, command) {
+function replyToOffer(data, command) {
   const { payload } = command;
-  fields(payload, ['action', 'actorId'], ['reference']);
+  fields(payload, ['action', 'actorId'], ['reference', ...(payload.action === 'reply' ? ['choice'] : [])]);
   const proposal = currentProposal(data, payload.reference, payload.actorId);
-  const { actor, decision, offer, receipt } = responseContext(data, proposal, payload.actorId);
-  requireThat(actor.controller === (payload.action === 'respond' ? 'rules' : 'human'), 'WRONG_CONTROLLER');
-  if (payload.action === 'respond') requireThat(decision.selected === 'Accept', 'RESPONSE_NOT_ACCEPTED');
-  requireThat(decision.candidates.some(candidate => candidate.act === 'Accept' && candidate.eligible), 'ACCEPTANCE_INELIGIBLE');
-  const message = compileAcceptance({
+  const { actor, decision, offer, receipt, terms, product } = responseContext(data, proposal, payload.actorId);
+  const autonomous = payload.action === 'respond';
+  requireThat(actor.controller === (autonomous ? 'rules' : 'human'), 'WRONG_CONTROLLER');
+
+  const choice = autonomous ? decision.selected : payload.action === 'accept' ? 'Accept' : payload.choice;
+  const candidate = decision.candidates.find(entry => entry.act === choice && entry.eligible);
+  requireThat(candidate, choice === 'Accept' ? 'ACCEPTANCE_INELIGIBLE' : 'RESPONSE_INELIGIBLE');
+  const reply = {
     ...messageFields(data, command),
     speaker: actor.id,
     recipient: offer.expression.speaker,
     offer,
     receipt,
     reference: payload.reference,
-    delivery: { vibe: 'EA', salience: 'NUANCED' },
-  });
+    delivery: decision.delivery,
+    reason: candidate.reason,
+  };
+
+  let message;
+  let changed = proposal;
+  let eventType;
+  const details = { proposalId: proposal.id, version: proposal.version, actorId: actor.id, causeMessageId: offer.id };
+  switch (choice) {
+    case 'Accept':
+      eventType = 'agreement';
+      message = compileAcceptance(reply);
+      proposal.status = 'agreed';
+      details.assent = [
+        { actorId: offer.expression.speaker, messageId: offer.id },
+        { actorId: actor.id, messageId: message.id },
+      ];
+      break;
+    case 'Refuse':
+      eventType = 'refusal';
+      message = compileRefusal(reply);
+      proposal.status = 'refused';
+      break;
+    case 'Counter':
+      eventType = 'counter';
+      changed = {
+        id: proposal.id,
+        version: proposal.version + 1,
+        participants: [actor.id, offer.expression.speaker],
+        status: 'open',
+      };
+      message = compileCounter({
+        ...reply,
+        proposal: { id: changed.id, version: changed.version, parent: expressionReference(offer.expression) },
+        terms: { ...terms, amountMinor: candidate.amountMinor },
+        label: product.label ?? 'the item',
+      });
+      changed.offerMessageId = message.id;
+      proposal.status = 'superseded';
+      data.proposals.push(changed);
+      details.version = changed.version;
+      break;
+    case 'Clarify':
+      eventType = 'clarification';
+      message = compileClarification({ ...reply, missing: decision.missing });
+      break;
+  }
+
   const observation = receiveMessage(data, message);
-  const event = recordEvent(data, 'agreement', command.id, {
-    proposalId: proposal.id, version: proposal.version,
-    assent: [
-      { actorId: offer.expression.speaker, messageId: offer.id },
-      { actorId: actor.id, messageId: message.id },
-    ],
-  });
-  proposal.status = 'agreed';
-  proposal.agreementEventId = event.id;
-  data.decisions.push({ causeMessageId: offer.id, responseMessageId: message.id, mode: actor.controller, decision });
-  return messageResult(event, proposal, message, observation);
+  const event = recordEvent(data, eventType, command.id, { ...details, messageId: message.id });
+  if (choice === 'Accept') proposal.agreementEventId = event.id;
+  data.decisions.push({ causeMessageId: offer.id, responseMessageId: message.id, mode: actor.controller, choice, decision });
+  return messageResult(event, changed, message, observation);
 }
 
 function settlementContext(data, payload, performer) {
@@ -240,7 +300,7 @@ function handover(data, command, settings) {
   return { type: event.type, eventId: event.id, ...transaction, observationIds };
 }
 
-const dispatch = { offer: makeOffer, accept: acceptOffer, respond: acceptOffer, pay, handover };
+const dispatch = { offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, pay, handover };
 
 function start(settings) {
   return createRun({ id: settings.runId, packageRef: scenarioPackageRef(settings), data: initialState(settings) });

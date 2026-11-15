@@ -5,6 +5,24 @@
     "deliveryTastes": {
       "displayed_concern": 1,
       "direct_demand": -1
+    },
+    "manner": {
+      "well": "SE",
+      "plain": "EA",
+      "badly": "EA"
+    }
+  },
+  "customer": {
+    "leaning": "even",
+    "priorityNudges": {},
+    "deliveryTastes": {
+      "displayed_concern": 1,
+      "direct_demand": -1
+    },
+    "manner": {
+      "well": "SE",
+      "plain": "SE",
+      "badly": "EA"
     }
   }
 }

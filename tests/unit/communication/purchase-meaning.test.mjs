@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  compileAcceptance, compileOffer, exchangeTerms, expressionReference, observePurchaseMessage,
+  compileAcceptance, compileClarification, compileCounter, compileOffer, compileRefusal,
+  exchangeTerms, expressionReference, observePurchaseMessage,
   validateExpression,
 } from '../../../communication/purchase-meaning.mjs';
 
@@ -162,4 +163,93 @@ test('a new proposal version retains the exact qualified parent and leaves the p
   assert.throws(() => offer({
     proposal: { ...proposal, version: 2, parent: { ...parent, scope: { ...scope, runId: 'run_0002' } } },
   }), { code: 'UNSUPPORTED_TERMS' });
+});
+
+function replyInput(record = offer(), overrides = {}) {
+  const { id, version } = record.expression.proposal;
+  return {
+    scope, id: 'message_0002', sequence: 2, speaker: record.expression.addressees[0],
+    recipient: record.expression.speaker, offer: record, receipt: heard(record),
+    reference: { id, version }, delivery: { vibe: 'EA', salience: 'NUANCED' }, ...overrides,
+  };
+}
+
+test('Refuse is a delivered Remark about the exact prior receipt, with the actor-safe reason', () => {
+  const original = offer();
+  const reason = 'I cannot sell below the marked price.';
+  const record = compileRefusal(replyInput(original, { reason }));
+  const { expression, content } = heard(record).receivedDetails.communication;
+  assert.equal(expression.function, 'REMARK');
+  assert.equal(expression.force, 'currentSelfPerformance');
+  assert.equal(expression.body.act, 'Refuse');
+  assert.deepEqual(expression.body.target.expression, expressionReference(original.expression));
+  assert.equal(expression.body.target.observationId, heard(original).id);
+  assert.equal(expression.body.reason, reason);
+  assert.match(content.text, /Refuses proposal proposal_0001, version 1. I cannot sell below the marked price./);
+  assert.throws(() => exchangeTerms(expression), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => compileRefusal(replyInput(original, { reason, receipt: null })), { code: 'NO_RECEIVING_PATH' });
+});
+
+test('Clarify is a delivered Request for the exact missing actor-known field, without its value', () => {
+  const reason = 'I need to check.';
+  const original = offer();
+  for (const [missing, question] of [
+    ['stock', 'Is the item available?'],
+    ['list_price', 'What is the list price?'],
+  ]) {
+    const record = compileClarification(replyInput(original, { reason, missing }));
+    const { expression, content } = heard(record).receivedDetails.communication;
+    assert.equal(content.kind, 'question');
+    assert.equal(content.text, question + ' ' + reason);
+    assert.equal(expression.function, 'REQUEST');
+    assert.equal(expression.force, 'request');
+    assert.equal(expression.body.act, 'Clarify');
+    assert.equal(expression.body.missing, missing);
+    assert.equal(expression.body.target.proposalId, proposal.id);
+    assert.equal(expression.body.target.proposalVersion, proposal.version);
+    assert.doesNotMatch(JSON.stringify(expression), /amountMinor|scorecard|privateComposition/);
+  }
+  assert.throws(() => compileClarification(replyInput(original, { reason, missing: 'hiddenStock' })), { code: 'UNSUPPORTED_TERMS' });
+});
+
+test('Counter delivers a new version with changed payment, an exact prior receipt and unchanged roles', () => {
+  const original = offer();
+  const parent = expressionReference(original.expression);
+  const reason = 'The amount has to meet the marked price.';
+  const args = replyInput(original, {
+    reason,
+    proposal: { ...proposal, version: 2, parent },
+    terms: { ...terms, amountMinor: 350 },
+    label: 'Tea',
+  });
+  const record = compileCounter(args);
+  const { expression, content } = heard(record).receivedDetails.communication;
+  assert.equal(expression.function, 'OFFER');
+  assert.equal(expression.body.offered.act, 'Give');
+  assert.equal(expression.proposal.version, 2);
+  assert.deepEqual(expression.proposal.parent, parent);
+  assert.deepEqual(expression.reply.target.expression, parent);
+  assert.equal(expression.reply.target.observationId, heard(original).id);
+  assert.equal(exchangeTerms(expression).amountMinor, 350);
+  assert.equal(exchangeTerms(original.expression).amountMinor, 300);
+  assert.match(content.text, /350 cent \(USD\)/);
+  assert.match(content.text, /The amount has to meet the marked price\./);
+  assert.throws(() => compileCounter({ ...args, terms }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => compileCounter({ ...args, terms: { ...args.terms, unitId: 'unit_0002' } }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => compileCounter({ ...args, reference: { id: proposal.id, version: 2 } }), { code: 'STALE_PROPOSAL' });
+  assert.throws(() => compileCounter({ ...args, proposal: { ...args.proposal, id: 'proposal_0002' } }), { code: 'STALE_PROPOSAL' });
+  assert.throws(() => compileCounter({ ...args, proposal: { ...args.proposal, parent: { ...parent, digest: 'b'.repeat(64) } } }),
+    { code: 'UNSUPPORTED_TERMS' });
+});
+
+test('Accept may deliver the trusted stated reason using the responding character’s authored style', () => {
+  const reason = 'This is a sale I can make.';
+  const record = compileAcceptance(replyInput(offer(), {
+    reason, delivery: { vibe: 'SE', salience: 'OVERT' },
+  }));
+  const receipt = heard(record);
+  assert.equal(receipt.receivedDetails.communication.expression.body.reason, reason);
+  assert.equal(receipt.receivedDetails.communication.prominence, 'emphatic');
+  assert.equal(receipt.receivedDetails.communication.framing[0].kind, 'displayed_concern');
+  assert.doesNotMatch(JSON.stringify(receipt), /privateComposition|selectedVibe|scorecard/);
 });

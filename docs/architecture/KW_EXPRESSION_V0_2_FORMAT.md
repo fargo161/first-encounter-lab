@@ -25,6 +25,17 @@ The accepted general tree can nest action subtrees under AND or OR groups, IF br
 
 Exact acceptance is a REMARK with force currentSelfPerformance. Its Accept action identifies the responding performer, the original speaker and the precise received proposal version, expression reference and observation ID. The sender's Offer counts as their own undertaking under Lab policy P2. The recipient's exact, eligible, delivered acceptance is still required. A claim, quote, stale version, ambiguous yes or unreceived offer cannot bind. Unsupported forces including report, quote or separate future promise have no assent path.
 
+## Delivered replies
+
+| Choice | Function and force | Stored target and effect |
+|---|---|---|
+| Accept | REMARK, currentSelfPerformance | Accept names the exact open version and receiver's original hearing. A stated reason may be delivered alongside it. Only this supported reply can assent. |
+| Refuse | REMARK, currentSelfPerformance | Refuse targets the delivered version and records the outward reason. The version closes without changing the ledger, and its terms and receipts remain in history. |
+| Counter | OFFER, proposal | The new version keeps the same chain and points to the exact prior expression. Its reply identifies the original hearing, and its exchange holds the new material terms. It supersedes only the target version. Each party can Counter at most twice in a chain. |
+| Clarify | REQUEST, request | Clarify names the exact delivered version, an outward reason, and the needed stock or list-price information. The current version stays open. |
+
+All replies are spoken now. A Counter's proposed acts keep the future stance. The recipient hears the scoped terms, outward stated reason and delivery cues. Role data and scores stay on the trusted inspection surface.
+
 ## Settlement and replay
 
 Pay then Give is the execution policy. No implicit BEFORE condition is added to ordinary offers. Agreement changes neither money nor goods. M3 effects record payment and handover separately, including stable references to command and agreement. Replay reconstructs received expressions and effects from the native validated journal.
