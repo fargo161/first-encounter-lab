@@ -6,6 +6,7 @@ import {
   exchangeTerms, expressionReference, observePurchaseMessage,
 } from '../communication/purchase-meaning.mjs';
 import { choosePurchaseResponse, deliveryFit, purchaseProfile } from '../decisions/clerk.mjs';
+import { chooseShopperOpening } from '../decisions/shopper.mjs';
 import {
   actorView, configureScenario, initialState, nextId, observeEvent, recordEvent, recordWarmth, scenarioPackageRef, validateState,
 } from './scenario.mjs';
@@ -19,6 +20,7 @@ const actions = freeze({
   accept: 'send_message',
   respond: 'send_message',
   reply: 'send_message',
+  shop: 'send_message',
   pay: 'perform_action',
   handover: 'perform_action',
   resolve_handover_failure: 'perform_action',
@@ -75,7 +77,7 @@ function messageResult(event, proposal, message, observation) {
   };
 }
 
-function makeOffer(data, command, settings) {
+function makeOffer(data, command, settings, openingEventId) {
   const { payload } = command;
   fields(payload, ['action', 'actorId', 'recipientId', 'productId', 'amountMinor', 'vibe', 'salience'], ['unitId', 'supersedes']);
   const sender = data.actors.find(actor => actor.id === payload.actorId);
@@ -125,7 +127,10 @@ function makeOffer(data, command, settings) {
   proposal.offerMessageId = message.id;
   if (prior) prior.status = 'superseded';
   data.proposals.push(proposal);
-  const event = recordEvent(data, 'offer', command.id, { proposalId: proposal.id, version: proposal.version, messageId: message.id });
+  const event = recordEvent(data, 'offer', command.id, {
+    proposalId: proposal.id, version: proposal.version, messageId: message.id,
+    ...(openingEventId && { openingEventId }),
+  });
   return messageResult(event, proposal, message, observation);
 }
 
@@ -155,6 +160,34 @@ function observeEmphaticDelivery(data, observation) {
   const kind = direction > 0 ? 'liked_emphatic_delivery' : 'disliked_emphatic_delivery';
   const reason = direction > 0 ? 'I received emphatic delivery I like.' : 'I received emphatic delivery I dislike.';
   recordWarmth(data, observation, speaker, kind, speaker, direction, reason);
+}
+
+function shop(data, command, settings) {
+  const { payload } = command;
+  fields(payload, ['action', 'actorId']);
+  const actor = data.actors.find(entry => entry.id === payload.actorId);
+  requireThat(actor?.role === 'customer' && actor.shopping, 'ACTION_UNAVAILABLE');
+  requireThat(actor.controller === 'rules', 'WRONG_CONTROLLER');
+  const local = actorView(data, actor.id);
+  const decision = chooseShopperOpening({
+    actorId: actor.id, profile: actorProfile(actor), wants: local.shopping.wants,
+    products: local.references, fundsMinor: local.account.balanceMinor,
+  });
+  const { selected: choice, product, offer } = decision;
+  const opening = recordEvent(data, 'shopper_opening', command.id, {
+    actorId: actor.id, choice,
+    ...(product && { productId: product.productId, unitId: product.unitId, productObservationId: product.observationId }),
+  });
+  if (choice === 'Leave') {
+    data.decisions.push({ openingEventId: opening.id, mode: actor.controller, decision });
+    return { type: opening.type, eventId: opening.id, choice };
+  }
+  const { delivery, ...terms } = offer;
+  const resultingOffer = makeOffer(data, { ...command, payload: {
+    action: 'offer', actorId: actor.id, recipientId: local.shopping.clerkId, ...terms, ...delivery,
+  } }, settings, opening.id);
+  data.decisions.push({ openingEventId: opening.id, producedMessageId: resultingOffer.messageId, mode: actor.controller, decision });
+  return { ...resultingOffer, openingEventId: opening.id, choice };
 }
 
 function responseContext(data, proposal, actorId) {
@@ -370,7 +403,7 @@ function handover(data, command) {
 }
 
 const dispatch = {
-  offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, pay,
+  offer: makeOffer, accept: replyToOffer, respond: replyToOffer, reply: replyToOffer, shop, pay,
   handover, resolve_handover_failure: handover, deliver_completion: deliverCompletion,
 };
 

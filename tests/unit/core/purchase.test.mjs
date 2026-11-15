@@ -569,3 +569,100 @@ test('emphatic courtesy uses actual recipient cues, respects bounds and cannot b
   assert.deepEqual(restored.submit(liked.command), { status: 'replayed', receipt: liked.receipt });
   assert.deepEqual(restored.inspect().data.judgments, session.inspect().data.judgments);
 });
+
+
+function shoppingFixture(humanId, funds = 1000) {
+  const options = fixtureOptions();
+  options.humanId = humanId;
+  options.runId = humanId === CLERK_ID ? 'run_05a0' : 'run_05a1';
+  options.products[1].kind = 'drink';
+  options.products.push(
+    { productId: 'subject_0004', label: 'Another drink', priceMinor: 200, kind: 'drink' },
+    { productId: 'subject_0005', label: 'Hidden drink', priceMinor: 50, kind: 'drink' },
+  );
+  options.units.push(
+    { id: 'unit_0004', productId: 'subject_0004', ownerId: STORE_ID, holderId: CLERK_ID },
+    { id: 'unit_0005', productId: 'subject_0005', ownerId: STORE_ID, holderId: CLERK_ID },
+  );
+  options.knowledge.push(
+    { actorId: BUYER_ID, unitId: OTHER_UNIT, available: true },
+    { actorId: BUYER_ID, unitId: 'unit_0004', available: true },
+    { actorId: CLERK_ID, unitId: 'unit_0004', available: true },
+    { actorId: CLERK_ID, unitId: 'unit_0005', available: true },
+  );
+  options.actors[0].balanceMinor = funds;
+  options.actors[0].shopping = { clerkId: CLERK_ID, wants: [{ kind: 'drink', budgetMinor: 300 }] };
+  return options;
+}
+
+test('an autonomous shopper picks and authors its own known affordable Offer to a human clerk', () => {
+  const { session, submit } = harness(shoppingFixture(CLERK_ID));
+  const shopper = session.forActor(BUYER_ID);
+  const clerk = session.forActor(CLERK_ID);
+  const override = shopper.submit('command_05a0', 'shop', { productId: 'subject_0005', recipientId: OTHER_BUYER });
+  assert.equal(override.status, 'rejected');
+  assert.equal(session.inspect().data.messages.length, 0);
+  const choice = shopper.submit('command_05a1', 'shop');
+  const ref = reference(choice);
+  assert.equal(choice.receipt.result.choice, 'Buy');
+  assert.equal(choice.receipt.result.type, 'offer');
+  const openingId = choice.receipt.result.openingEventId;
+  const event = session.inspect().data.events.find(entry => entry.id === openingId);
+  assert.equal(event.details.productId, OTHER_PRODUCT);
+  assert.equal(event.details.unitId, OTHER_UNIT);
+  assert.equal(shopper.view().references.find(entry => entry.unitId === OTHER_UNIT).observationId, event.details.productObservationId);
+  const heard = clerk.view().observations.at(-1).receivedDetails.communication;
+  assert.equal(heard.expression.speaker, BUYER_ID);
+  assert.equal(exchangeTerms(heard.expression).amountMinor, 200);
+  assert.equal(exchangeTerms(heard.expression).productId, OTHER_PRODUCT);
+  assert.ok(!JSON.stringify(shopper.view()).includes('Hidden drink'));
+  assert.ok(!JSON.stringify(clerk.view()).includes('openingCandidates'));
+  assert.deepEqual(clerk.menu(ref), ['Accept', 'Refuse']);
+  assert.equal(committed(clerk.submit('command_05a1', 'reply', { reference: ref, choice: 'Accept' })).type, 'agreement');
+  assert.equal(shopper.view().observations.at(-1).receivedDetails.communication.expression.body.act, 'Accept');
+  settle(submit, ref);
+  const restored = createPurchase();
+  restored.restore(session.save());
+  assert.deepEqual(restored.forActor(BUYER_ID).submit('command_05a1', 'shop', {}), { status: 'replayed', receipt: choice.receipt });
+  assert.equal(restored.save(), session.save());
+});
+
+test('human customer control has the same response eligibility and transaction outcome in a separate run', () => {
+  const scripted = harness(shoppingFixture(CLERK_ID));
+  const manual = harness(shoppingFixture(BUYER_ID));
+  const authored = scripted.session.forActor(BUYER_ID).submit('command_05b0', 'shop');
+  const manualShop = manual.session.forActor(BUYER_ID).submit('command_05b0', 'shop');
+  assert.equal(manualShop.code, 'WRONG_CONTROLLER');
+  const human = offered(manual.submit, { productId: OTHER_PRODUCT, unitId: OTHER_UNIT, amountMinor: 200 });
+  assert.notEqual(scripted.session.inspect().id, manual.session.inspect().id);
+  assert.equal(scripted.session.view(BUYER_ID).actor.id, manual.session.view(BUYER_ID).actor.id);
+  assert.equal(scripted.session.view(CLERK_ID).actor.id, manual.session.view(CLERK_ID).actor.id);
+  assert.deepEqual(scripted.session.view(BUYER_ID).shopping, manual.session.view(BUYER_ID).shopping);
+  const scriptedRef = reference(authored);
+  const humanRef = reference(human);
+  assert.deepEqual(scripted.session.forActor(CLERK_ID).menu(scriptedRef), manual.session.forActor(CLERK_ID).menu(humanRef));
+  committed(scripted.submit('reply', { actorId: CLERK_ID, reference: scriptedRef, choice: 'Accept' }));
+  committed(manual.submit('respond', { actorId: CLERK_ID, reference: humanRef }));
+  settle(scripted.submit, scriptedRef);
+  settle(manual.submit, humanRef);
+  assert.deepEqual(scripted.session.inspect().data.ledger, manual.session.inspect().data.ledger);
+});
+
+test('the autonomous shopper leaves without composing an Offer when eligible products are hidden or unaffordable', () => {
+  const noKnownMatch = shoppingFixture(CLERK_ID);
+  noKnownMatch.knowledge = noKnownMatch.knowledge.filter(grant => grant.actorId !== BUYER_ID);
+  for (const options of [noKnownMatch, shoppingFixture(CLERK_ID, 199)]) {
+    const { session } = harness(options);
+    const balance = session.view(BUYER_ID).account.balanceMinor;
+    const leave = session.forActor(BUYER_ID).submit('command_05c0', 'shop');
+    assert.equal(committed(leave).choice, 'Leave');
+    assert.equal(committed(leave).type, 'shopper_opening');
+    assert.equal(session.inspect().data.messages.length, 0);
+    assert.equal(session.inspect().data.proposals.length, 0);
+    assert.equal(session.view(BUYER_ID).account.balanceMinor, balance);
+    assert.doesNotMatch(JSON.stringify(session.forActor(BUYER_ID).view()), /Hidden drink|openingCandidates/);
+    const reload = createPurchase();
+    reload.restore(session.save());
+    assert.deepEqual(reload.forActor(BUYER_ID).submit('command_05c0', 'shop'), { status: 'replayed', receipt: leave.receipt });
+  }
+});

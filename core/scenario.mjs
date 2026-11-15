@@ -25,7 +25,10 @@ const defaults = freeze({
   currency: 'USD',
   store: { id: STORE_ID, balanceMinor: 0 },
   actors: [
-    { id: BUYER_ID, name: 'Customer', role: 'customer', balanceMinor: 1000 },
+    {
+      id: BUYER_ID, name: 'Customer', role: 'customer', balanceMinor: 1000,
+      shopping: { clerkId: CLERK_ID, wants: [{ kind: 'drink', budgetMinor: 300 }] },
+    },
     { id: CLERK_ID, name: 'Clerk', role: 'clerk', balanceMinor: 0 },
   ],
   products: [fixtureProduct(products.offerable, 'drink'), fixtureProduct(products.unobserved, 'supply')],
@@ -75,7 +78,7 @@ export function configureScenario(options = {}) {
   distinct(actors, actor => actor.id);
   requireThat(actors.length > 0 && (humanId === null || actors.some(actor => actor.id === humanId)), 'INVALID_CONTROLLER');
   for (const actor of actors) {
-    fields(actor, ['id', 'name', 'role', 'balanceMinor'], ['personality', 'completionObservation']);
+    fields(actor, ['id', 'name', 'role', 'balanceMinor'], ['personality', 'completionObservation', 'shopping']);
     id(actor.id, 'actor');
     text(actor.name, 100);
     requireThat(['clerk', 'customer', 'observer'].includes(actor.role), 'INVALID_ROLE');
@@ -83,6 +86,19 @@ export function configureScenario(options = {}) {
     if (Object.hasOwn(actor, 'personality')) validatePersonality(actor.personality);
     if (Object.hasOwn(actor, 'completionObservation')) {
       requireThat(['immediate', 'delayed'].includes(actor.completionObservation), 'INVALID_GRANT');
+    }
+  }
+  for (const actor of actors) {
+    if (!Object.hasOwn(actor, 'shopping')) continue;
+    requireThat(actor.role === 'customer', 'INVALID_SHOPPING_PROFILE');
+    const { shopping } = actor;
+    fields(shopping, ['clerkId', 'wants']);
+    requireThat(actors.some(entry => entry.role === 'clerk' && entry.id === shopping.clerkId), 'INVALID_SHOPPING_PROFILE');
+    distinct(shopping.wants, want => want.kind);
+    for (const want of shopping.wants) {
+      fields(want, ['kind', 'budgetMinor']);
+      text(want.kind, 100);
+      integer(want.budgetMinor);
     }
   }
   integer(actors.reduce((total, actor) => total + actor.balanceMinor, store.balanceMinor));
@@ -181,8 +197,8 @@ function initialJudgments(settings) {
 export function initialState(settings) {
   const { actors, humanId, store, units, products: catalog, knowledge, currency } = settings;
   const data = {
-    actors: actors.map(({ id, name, role, personality = {}, completionObservation = 'immediate' }) => ({
-      id, name, role, personality: copy(personality), completionObservation, controller: id === humanId ? 'human' : 'rules',
+    actors: actors.map(({ id, name, role, personality = {}, completionObservation = 'immediate', shopping = null }) => ({
+      id, name, role, personality: copy(personality), completionObservation, shopping: copy(shopping), controller: id === humanId ? 'human' : 'rules',
     })),
     ledger: {
       currency,
@@ -256,6 +272,7 @@ export function actorView(data, actorId) {
     observations,
     messages,
     proposals,
+    ...(actor.shopping && { shopping: actor.shopping }),
   }));
 }
 

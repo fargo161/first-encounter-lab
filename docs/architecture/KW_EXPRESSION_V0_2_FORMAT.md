@@ -23,6 +23,8 @@ The root exchange names offered and requested, each containing an action subtree
 
 The accepted general tree can nest action subtrees under AND or OR groups, IF branches, BEFORE/AFTER/UNTIL time relationships, NOT, ABOUT or BECAUSE. This run composes and executes the bounded immediate two-action Pay/Give exchange and its supported reply actions. A grouped or conditional expression is rejected as a whole by the executable validator. No partial agreement or action is inferred.
 
+The reserved connectors carry their own attachment and scope. AND groups at least two children and preserves presentation order. OR names alternatives, chooser or selection rule and interpretation. IF identifies the condition, consequence and whether it gates formation or a particular duty. BEFORE and AFTER name the anchored subtree and boundary. UNTIL names what continues, its ending condition and endpoint rule. NOT names the affected subtree and negation mode. ABOUT carries a separate topic. BECAUSE carries an attributed explanation. The producer paper examples preserve these relations. The Lab admits the immediate exchange and exact replies above as its executable subset, with no flattening of other trees.
+
 Exact acceptance is a REMARK with force currentSelfPerformance. Its Accept action identifies the responding performer, the original speaker and the precise received proposal version, expression reference and observation ID. The sender's Offer counts as their own undertaking under Lab policy P2. The recipient's exact, eligible, delivered acceptance is still required. A claim, quote, stale version, ambiguous yes or unreceived offer cannot bind. Unsupported forces including report, quote or separate future promise have no assent path.
 
 ## Delivered replies

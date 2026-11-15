@@ -9,7 +9,7 @@ Reviewed historical Lab delivery is 9088cd2fd9bf162319e745853930f8ea2cc40375. Te
 | Lead | AGENTS.md, README.md, the expression format documentation, this run folder's checkpoint, trace and integration evidence, and the new dated build-source lock. |
 | A1 | core/scenario.mjs, core/purchase.mjs, tests/unit/core/purchase.test.mjs and external test-only action-resolution support. |
 | A2 | communication/purchase-meaning.mjs and tests/unit/communication/purchase-meaning.test.mjs. |
-| A3 | decisions/clerk.mjs, role and personality content used by the headless runner, and tests/unit/decisions/clerk.test.mjs. |
+| A3 | decisions/clerk.mjs, decisions/shopper.mjs, role and personality content used by the headless runner, tests/unit/decisions/clerk.test.mjs and tests/unit/decisions/shopper.test.mjs. |
 | A7 | tests/independent headless generalization probes and corresponding independent findings, following a clean committed candidate export. |
 
 Assign any additional path to one of these owners before creating it. The Lead coordinates interfaces and local commits. Four active slots include the Lead. A7 reviews after the implementation lanes finish.
