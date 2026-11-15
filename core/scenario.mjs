@@ -1,5 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import products from '../content/products.json' with { type: 'json' };
+import roles from '../content/roles.json' with { type: 'json' };
+import personalities from '../content/personalities.json' with { type: 'json' };
+import cues from '../content/based-cues.json' with { type: 'json' };
 import { BASED_CATALOG, canonicalJson, copy, fields, freeze, id, integer, requireThat, text } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { projectObservation, recipientHistory } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs';
 import { exchangeTerms, outwardCommunication } from '../communication/purchase-meaning.mjs';
@@ -34,7 +37,6 @@ const defaults = freeze({
     { actorId: BUYER_ID, unitId: UNIT_ID },
     { actorId: CLERK_ID, unitId: UNIT_ID, available: true },
   ],
-  failFirstHandover: false,
 });
 
 function distinct(entries, key) {
@@ -55,7 +57,7 @@ function validatePersonality(personality) {
   }
   if (Object.hasOwn(personality, 'manner')) {
     fields(personality.manner, [], ['well', 'plain', 'badly']);
-    requireThat(Object.values(personality.manner).every(vibe => Object.hasOwn(BASED_CATALOG, vibe)), 'INVALID_PERSONALITY');
+    requireThat(Object.values(personality.manner).every(vibe => Object.hasOwn(BASED_CATALOG, vibe) && Object.hasOwn(cues, vibe)), 'INVALID_PERSONALITY');
   }
 }
 
@@ -109,7 +111,6 @@ export function configureScenario(options = {}) {
       requireThat(grant.listedPriceMinor > 0 && grant.priceKnown !== false, 'INVALID_GRANT');
     }
   }
-  requireThat(typeof settings.failFirstHandover === 'boolean');
   return freeze(settings);
 }
 
@@ -118,7 +119,9 @@ export function scenarioPackageRef(settings) {
   return freeze({
     id: 'package_0001',
     revision: 2,
-    digest: createHash('sha256').update(canonicalJson({ schema: 'lab-headless-generalization@1', packageSettings })).digest('hex'),
+    digest: createHash('sha256').update(canonicalJson({
+      schema: 'lab-headless-generalization@1', packageSettings, authored: { roles, personalities, cues },
+    })).digest('hex'),
   });
 }
 

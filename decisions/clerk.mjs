@@ -103,8 +103,8 @@ function marketRestriction(role, profile, product, amountMinor) {
     return { text: 'I have been told this item is unavailable.', rule: 'C4', class: 'cannot' };
   }
   if (product?.priceMinor == null) return null;
-  if (role === 'clerk' && profile.role.exactListPrice && amountMinor !== product.priceMinor) {
-    return { text: 'I can only sell at the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
+  if (role === 'clerk' && profile.role.minimumListPrice && amountMinor < product.priceMinor) {
+    return { text: 'I cannot sell below the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };
   }
   if (role === 'customer' && profile.role.maxListPrice && amountMinor > product.priceMinor) {
     return { text: 'I will not pay above the marked price.', rule: 'M2', class: 'may_not', counter: product.priceMinor };

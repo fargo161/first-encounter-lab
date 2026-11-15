@@ -41,7 +41,7 @@ test('a known exact-price sale is ranked using only the received offer and scope
   assert(Object.isFrozen(find(result, 'Accept').rows));
 });
 
-test('observed stock and exact-price restrictions cannot be overridden by the delivery', () => {
+test('observed stock and below-list restrictions cannot be overridden by the delivery', () => {
   const view = clerkView();
   view.warmth = 2;
   view.product.available = false;
@@ -133,7 +133,7 @@ test('the appointed leaning breaks an actual score tie and the spoken reason nam
 test('both controllers share role-based Counter terms, cap and explicit unsupported choices', () => {
   for (const role of ['clerk', 'customer']) {
     const view = { ...clerkView(), role, profile: role === 'clerk' ? CLERK_PROFILE : CUSTOMER_PROFILE };
-    view.offer.amountMinor = 600;
+    view.offer.amountMinor = role === 'clerk' ? 400 : 600;
     for (const controller of ['human', 'rules']) {
       const first = choosePurchaseResponse({ ...view, controller, counterCount: 0 });
       assert.equal(find(first, 'Counter').amountMinor, 500);
@@ -158,4 +158,50 @@ test('reply delivery comes from the responding character and a stable negative r
   assert.equal(cold.selected, 'Accept');
   assert.equal(cold.reasonFactor, 'goodwill');
   assert.equal(find(cold, 'Accept').reason, cold.reason);
+});
+
+test('a 300-minor-unit listing blocks 200, scores 300 and 400, and uses only observed restrictions', () => {
+  const view = clerkView();
+  view.product.priceMinor = 300;
+  const results = [200, 300, 400].map(amountMinor =>
+    choosePurchaseResponse({ ...view, offer: { ...view.offer, amountMinor } }));
+  assert.deepEqual(results.map(result => ({
+    accept: find(result, 'Accept').eligible, selected: result.selected, rule: result.reasonRule ?? null
+  })), [
+    { accept: false, selected: 'Counter', rule: 'M2' },
+    { accept: true, selected: 'Accept', rule: null },
+    { accept: true, selected: 'Accept', rule: null }
+  ]);
+  assert.equal(find(results[0], 'Counter').amountMinor, 300);
+  assert.equal(results[0].reason, 'I cannot sell below the marked price.');
+  for (const result of results.slice(1)) {
+    assert.equal(result.reason, 'I accept the immediate exchange on these terms.');
+    assert.equal(find(result, 'Accept').score, 6);
+  }
+
+  const offer = { ...view.offer, amountMinor: 400 };
+  const unavailable = choosePurchaseResponse({ ...view, offer, product: { ...view.product, available: false } });
+  assert.equal(unavailable.selected, 'Refuse');
+  assert.equal(unavailable.reasonRule, 'C4');
+  const unseen = choosePurchaseResponse({ ...view, offer, product: null, actualListPrice: 700 });
+  assert.equal(unseen.selected, 'Clarify');
+  assert.deepEqual(unseen, choosePurchaseResponse({ ...view, offer, product: null, actualListPrice: 100 }));
+});
+
+test('the same above-list offer can be refused by a known scoring factor with acceptance still eligible', () => {
+  const view = clerkView();
+  view.product.priceMinor = 300;
+  view.offer.amountMinor = 400;
+  view.offer.cues = [{ kind: 'direct_demand' }];
+  view.warmth = -2;
+  view.profile = {
+    ...CLERK_PROFILE,
+    personality: {
+      ...CLERK_PROFILE.personality, leaning: 'cautious', priorityNudges: { makeMoney: -1, helpCustomers: -1 }
+    }
+  };
+  const result = choosePurchaseResponse(view);
+  assert.equal(find(result, 'Accept').eligible, true);
+  assert.equal(result.selected, 'Refuse');
+  assert.equal(result.reasonFactor, 'goodwill');
 });

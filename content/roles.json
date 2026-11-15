@@ -8,7 +8,7 @@
       "helpCustomers": 2,
       "avoidExtraWork": 1
     },
-    "exactListPrice": true
+    "minimumListPrice": true
   },
   "customer": {
     "id": "customer",

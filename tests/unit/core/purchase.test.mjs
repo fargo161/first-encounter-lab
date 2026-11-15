@@ -4,6 +4,7 @@ import {
   BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID, createPurchase,
 } from '../../../core/purchase.mjs';
 import { exchangeTerms } from '../../../communication/purchase-meaning.mjs';
+import { failHandover } from '../../support/action-resolution.mjs';
 
 const OTHER_BUYER = 'actor_0003';
 const BYSTANDER = 'actor_0004';
@@ -192,9 +193,9 @@ test('competing agreements on one unit cannot charge two customers before or aft
   committed(submit('respond', { actorId: CLERK_ID, reference: first }));
   committed(submit('respond', { actorId: CLERK_ID, reference: second }));
   committed(submit('pay', { actorId: BUYER_ID, reference: first }));
-  assert.equal(submit('pay', { actorId: OTHER_BUYER, reference: second }).code, 'OUT_OF_STOCK');
+  assert.equal(submit('pay', { actorId: OTHER_BUYER, reference: second }).code, 'ACTION_UNAVAILABLE');
   committed(submit('handover', { actorId: CLERK_ID, reference: first }));
-  assert.equal(submit('pay', { actorId: OTHER_BUYER, reference: second }).code, 'OUT_OF_STOCK');
+  assert.equal(submit('pay', { actorId: OTHER_BUYER, reference: second }).code, 'ACTION_UNAVAILABLE');
   assert.equal(session.view(OTHER_BUYER).account.balanceMinor, 900);
   assert.equal(session.inspect().data.events.filter(event => event.type === 'payment').length, 1);
 });
@@ -202,7 +203,7 @@ test('competing agreements on one unit cannot charge two customers before or aft
 test('insufficient cash, hidden stock and wrong performers cannot move money or goods', () => {
   const poor = { ...fixtureOptions(), actors: actors(299) };
   const hidden = { ...fixtureOptions(), units: [missingUnit, fixtureOptions().units[1]] };
-  for (const [options, code] of [[poor, 'INSUFFICIENT_FUNDS'], [hidden, 'OUT_OF_STOCK']]) {
+  for (const [options, code] of [[poor, 'INSUFFICIENT_FUNDS'], [hidden, 'ACTION_UNAVAILABLE']]) {
     const { session, submit } = harness(options);
     const ref = reference(offered(submit));
     committed(submit('respond', { actorId: CLERK_ID, reference: ref }));
@@ -215,12 +216,15 @@ test('insufficient cash, hidden stock and wrong performers cannot move money or 
 });
 
 test('paid but unfulfilled handover failure restores and retries without another payment', () => {
-  const { session, submit } = harness({ failFirstHandover: true });
+  const { session, submit } = harness();
   const ref = reference(offered(submit));
   committed(submit('respond', { actorId: CLERK_ID, reference: ref }));
   committed(submit('pay', { actorId: BUYER_ID, reference: ref }));
-  const failed = submit('handover', { actorId: CLERK_ID, reference: ref });
+  const failed = failHandover(session, { commandId: 'command_00fd', resultId: 'result_00fd', sellerId: CLERK_ID, reference: ref });
   assert.equal(committed(failed).type, 'handover_failed');
+  assert.equal(session.inspect().data.events.at(-1).details.resolutionId, 'result_00fd');
+  assert.doesNotMatch(session.save(), /failFirstHandover|INJECTED_HANDOVER_FAILURE/);
+  assert.equal(JSON.parse(session.save()).run.journal.at(-1).command.kind, 'perform_action');
   assert.equal(session.inspect().data.proposals[0].status, 'paid');
   assert.equal(session.inspect().data.ledger.units[0].ownerId, STORE_ID);
   const restored = createPurchase();
@@ -388,4 +392,68 @@ test('outward reply delivery derives from the replying character’s authored ma
     assert.equal(session.inspect().data.messages.at(-1).privateComposition.selectedVibe, vibe);
   }
   assert.notDeepEqual(outputs[0], outputs[1]);
+});
+
+test('listed price 300 is a floor in replies, clerk authorship, and payment even with stale listing evidence', () => {
+  for (const amountMinor of [200, 300, 400]) {
+    const { session, submit } = harness();
+    const ref = reference(offered(submit, { amountMinor }));
+    const clerk = session.decide(ref, CLERK_ID);
+    assert.equal(clerk.candidates.find(candidate => candidate.act === 'Accept').eligible, amountMinor >= 300);
+    assert.equal(clerk.selected, amountMinor < 300 ? 'Counter' : 'Accept');
+    assert.ok(clerk.reason.length > 0);
+  }
+
+  const { session, submit } = harness({ humanId: CLERK_ID });
+  assert.equal(offered(submit, { actorId: CLERK_ID, recipientId: BUYER_ID, amountMinor: 200 }).code, 'PRICE_POLICY');
+  assert.equal(session.inspect().data.proposals.length, 0);
+
+  const stale = fixtureOptions();
+  stale.knowledge[1].listedPriceMinor = 200;
+  const inaccurate = harness(stale);
+  const ref = reference(offered(inaccurate.submit, { amountMinor: 200 }));
+  committed(inaccurate.submit('respond', { actorId: CLERK_ID, reference: ref }));
+  const before = inaccurate.session.save();
+  assert.equal(inaccurate.submit('pay', { actorId: BUYER_ID, reference: ref }).code, 'ACTION_UNAVAILABLE');
+  assert.equal(inaccurate.session.save(), before);
+});
+
+test('actor capabilities cannot inspect private information, resolve a fault, impersonate neighbors or read their receipts', () => {
+  const { session } = harness(fixtureOptions());
+  const buyer = session.forActor(BUYER_ID);
+  const clerk = session.forActor(CLERK_ID);
+  const bystander = session.forActor(BYSTANDER);
+  const inputs = { actorId: BYSTANDER, recipientId: CLERK_ID, productId: PRODUCT_ID, amountMinor: 300, vibe: 'SE', salience: 'NUANCED' };
+  const offer = buyer.submit('command_01a0', 'offer', inputs);
+  const ref = reference(offer);
+  assert.equal(offer.receipt.committedRevision, undefined);
+  assert.equal(offer.receipt.result.observationId, undefined);
+  assert.deepEqual(buyer.submit('command_01a0', 'offer', inputs), { status: 'replayed', receipt: offer.receipt });
+  assert.equal(buyer.submit('command_01a0', 'offer', { ...inputs, amountMinor: 301 }).code, 'IDENTITY_CONFLICT');
+  assert.equal(bystander.submit('command_01a0', 'offer', inputs).code, 'WRONG_ACTOR');
+  assert.equal(session.inspect().data.messages[0].expression.speaker, BUYER_ID);
+  assert.throws(() => bystander.menu(ref), { code: 'STALE_PROPOSAL' });
+
+  const assent = clerk.submit('command_01a0', 'respond', { reference: ref });
+  assert.equal(committed(assent).type, 'agreement');
+  assert.equal(assent.receipt.result.observationId, undefined);
+  const payment = committed(buyer.submit('command_01a1', 'pay', { reference: ref }));
+  assert.equal(payment.observationIds.length, 1);
+  assert.equal(buyer.view().observations.find(entry => entry.id === payment.observationIds[0]).observerId, BUYER_ID);
+
+  assert.equal(clerk.recordHandoverFailure, undefined);
+  const fake = clerk.submit('command_01a2', 'resolve_handover_failure', { reference: ref, evidence: { id: 'result_0001', outcome: 'not_transferred' } });
+  assert.deepEqual(fake, { status: 'rejected', code: 'ACTION_UNAVAILABLE' });
+  assert.equal(clerk.submit('command_01a3', 'handover', { reference: ref, evidence: { id: 'result_0001', outcome: 'not_transferred' } }).status, 'rejected');
+  assert.equal(session.inspect().data.events.some(event => event.type === 'handover_failed'), false);
+  for (const actor of [buyer, clerk, bystander]) {
+    assert.doesNotMatch(JSON.stringify(actor.view()), /selectedVibe|privateComposition|candidates|score|priorityNudges|deliveryTastes/);
+  }
+  assert.doesNotMatch(JSON.stringify(buyer.view()), /Witness without a receipt|Second customer/);
+  assert.notEqual(session.inspect().data.decisions.length, 0);
+  const saved = session.save();
+  session.restore(saved);
+  assert.throws(() => buyer.view(), { code: 'STALE_ACTOR_VIEW' });
+  assert.deepEqual(session.forActor(BUYER_ID).submit('command_01a0', 'offer', inputs),
+    { status: 'replayed', receipt: offer.receipt });
 });
