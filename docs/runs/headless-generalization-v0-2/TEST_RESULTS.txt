@@ -1,0 +1,128 @@
+Historical v0.1 (unmodified)
+Git 9088cd2fd9bf162319e745853930f8ea2cc40375, Node v24.22.1, exit 0
+node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs tests/independent/headless-purchase.test.mjs
+
+v24.22.1
+✔ two fresh runs produce identical scoped choices, durable records and replay bytes (61.0934ms)
+✔ unreceived catalog entries and authoritative facts stay out of scope and clerk policy (17.2673ms)
+✔ only the addressed actor receives authored cues and exact terms; inspector keeps private intent separate (17.8434ms)
+✔ only exact assent to the newest delivered offer version can create an agreement (34.8811ms)
+✔ assent preserves the ledger; explicit settlement conserves minor units and gives one item once (39.7971ms)
+✔ funds and hidden actual stock bar execution even when informed parties can agree (23.5189ms)
+✔ injected failed handover survives save and exact receipt replay; new retry moves stock only (46.9744ms)
+✔ malformed and inconsistent saves fail atomically; stale commands and copied receipts cannot reapply effects (85.0969ms)
+✔ swapping controller before a comparison preserves identities, scope, eligibility and settlement (69.2824ms)
+✔ a known product compiles into one immutable, versioned Pay-for-Give Offer (2.7334ms)
+✔ unknown products, unsupported shapes and unauthored vibes do not compile (0.6286ms)
+✔ recipient hears authored cues and prominence, without the speaker’s private composition (3.046ms)
+✔ the authorized recipient assents with a linked Remark that repeats the exact frozen terms (1.2384ms)
+✔ ambiguous or stale assent, wrong recipient and missing hearing do not produce an acceptance (4.2859ms)
+✔ even a matching target and version cannot assent to changed delivered terms (1.4625ms)
+✔ scenario receipt grants the known product and preserves actor privacy (8.4461ms)
+✔ a superseded version and ambiguous assent change no run state (19.9495ms)
+✔ agreement leaves the ledger unchanged; pay and handover commit once (22.0815ms)
+✔ wrong actor, insufficient funds and withheld stock prevent execution (19.9474ms)
+✔ an injected handover failure preserves paid state across reload, then retry fulfills once (45.0723ms)
+✔ malformed, incompatible or tampered saves cannot replace the run (16.5218ms)
+✔ command identity, revision and run binding reject conflicts (3.521ms)
+✔ controller assignment changes initiative but preserves eligible options and ledger mechanics (32.173ms)
+✔ a known exact-price sale is ranked using only the received offer and scoped observation (2.6751ms)
+✔ observed stock and exact-price restrictions cannot be overridden by the delivery (0.3399ms)
+✔ permission comes from the clerk role and never the actor controller (0.3618ms)
+✔ an unknown stock fact asks for clarification without disclosing an authoritative stock value (0.397ms)
+✔ outward cue prominence affects goodwill and private delivery fields never affect the ranking (0.3395ms)
+✔ the appointed leaning breaks an actual score tie deterministically (0.2742ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3883.5477
+
+Local v0.2 component checkpoints (Node v24.22.1, exit 0 at each checkpoint)
+node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs
+Steps 1–4 passed 24 / 35 / 39 / 45, zero failed or skipped.
+Step 5 adds the shopper suite and passed 54. Review correction passed 55.
+
+Final v0.2 integrated test command with independently authored probes
+Tested production Git 4fbd313529bc23771d4c629eb452239110001348, Node v24.22.1, exit 0
+node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs tests/unit/decisions/shopper.test.mjs tests/independent/headless-purchase.test.mjs
+
+v24.22.1
+✔ A7-01 two independently constructed runs yield identical judgments, decisions, journals and save bytes (178.7594ms)
+✔ A7-02 two simultaneous distinct-unit sales, clerk-originated offer, exact assent and separate world effects (243.5097ms)
+✔ A7-03 below, equal and above a known 300 list price with outward reasons and matching human eligibility (105.1365ms)
+✔ A7-04 both controller assignments deliver two Counters per participant, exact versions, Refuse and Clarify (790.6441ms)
+✔ A7-05 actor capabilities conceal other receipts, secret catalog, private BASED composition and scores (27.5416ms)
+✔ A7-06 competing paid claims, actual hidden stock and insufficient funds cannot debit twice or disclose conditions (174.5123ms)
+✔ A7-07 an external handover failure survives restore and exact replay, then a retry transfers only the unit (120.3249ms)
+✔ A7-08 malformed saves and stale, conflicting or cross-run commands leave the candidate unchanged (55.7353ms)
+✔ A7-09 rejects the historical save envelope and optionally verifies a frozen save byte for byte (3.0869ms)
+✔ A7-10 directed warmth and trust retain cause and bounds across two sales and a late receipt (263.3443ms)
+✔ A7-11 autonomous and manual openings share transaction outcomes with the control assignments reversed (145.3669ms)
+✔ A7-12 the shopper tries a known affordable alternative when the first choice is known unavailable (8.4739ms)
+✔ a $3 product compiles into one immutable versioned exchange of typed Pay and Give (4.7264ms)
+✔ a clerk-originated Offer gives the same terms with Give on the offered side (5.9658ms)
+✔ unadmitted shapes, amounts and unauthored vibes cannot compile or produce partial meaning (6.0104ms)
+✔ only the addressee hears exact terms and outward cues without private composition (2.685ms)
+✔ current self-assent cites the actual received Offer by exact immutable reference (3.9556ms)
+✔ ambiguous and stale references, wrong parties, missing receipts and copied receipts do not assent (8.4325ms)
+✔ equally named received terms cannot be changed or quoted into assent (5.2886ms)
+✔ a new proposal version retains the exact qualified parent and leaves the prior terms intact (1.2692ms)
+✔ Refuse is a delivered Remark about the exact prior receipt, with the actor-safe reason (5.8463ms)
+✔ Clarify is a delivered Request for the exact missing actor-known field, without its value (8.1931ms)
+✔ Counter delivers a new version with changed payment, an exact prior receipt and unchanged roles (9.554ms)
+✔ Accept may deliver the trusted stated reason using the responding character’s authored style (3.3794ms)
+✔ each actor sees only granted references, their cash and their actual delivery (32.9334ms)
+✔ the reference $3 deal is heard, exact assent changes no assets, and independent effects replay once (85.6223ms)
+✔ a human clerk offers to sell and a rules-driven customer accepts through the same expression and ledger (30.5594ms)
+✔ two live negotiations settle distinct products in a single run with conserved per-actor and till accounts (165.3784ms)
+✔ a linked Offer version invalidates old assent and leaves the other chain open (37.1514ms)
+✔ competing agreements on one unit cannot charge two customers before or after handover (67.2103ms)
+✔ insufficient cash, hidden stock and wrong performers cannot move money or goods (44.823ms)
+✔ paid but unfulfilled handover failure restores and retries without another payment (61.0247ms)
+✔ malformed, tampered, old-version and copied command inputs fail without replacing the run (12.1301ms)
+✔ controller assignment changes eligibility of the interface, with identical role choices and settlement (47.0459ms)
+✔ rules Refusal is actually delivered with actor-safe words and keeps the earlier terms (15.9556ms)
+✔ an actor requests genuinely missing price or stock and does not assent or learn hidden stock (63.1062ms)
+✔ Counter creates an exact same-chain OFFER with the responding speaker and keeps another proposal open (86.056ms)
+✔ the same menu enforces the two-Counter maximum per actor and chain for both controller assignments (425.6531ms)
+✔ outward reply delivery derives from the replying character’s authored manner (24.7327ms)
+✔ listed price 300 is a floor in replies, clerk authorship, and payment even with stale listing evidence (26.8338ms)
+✔ actor capabilities cannot inspect private information, resolve a fault, impersonate neighbors or read their receipts (51.3303ms)
+✔ first purchase warmth applies in both directions with distinct receipts from one event and no trust gain (146.6434ms)
+✔ delayed first-completion receipt earns its original cause once even after a later sale is heard first (289.842ms)
+✔ emphatic courtesy uses actual recipient cues, respects bounds and cannot be farmed after replay (66.2374ms)
+✔ an autonomous shopper picks and authors its own known affordable Offer to a human clerk (114.1142ms)
+✔ human customer control has the same response eligibility and transaction outcome in a separate run (77.3356ms)
+✔ the autonomous shopper leaves without composing an Offer when eligible products are hidden or unaffordable (32.7505ms)
+✔ a known exact-price sale is ranked using only the received offer and scoped observation (4.7529ms)
+✔ observed stock and below-list restrictions cannot be overridden by the delivery (0.8965ms)
+✔ permission comes from the role and never the actor controller (2.1738ms)
+✔ unknown stock prompts a question without disclosing authoritative stock or granting assent (0.6559ms)
+✔ outward cue prominence affects goodwill and private delivery fields never affect the ranking (0.633ms)
+✔ the appointed leaning breaks an actual score tie and the spoken reason names a flipping factor (0.4882ms)
+✔ both controllers share role-based Counter terms, cap and explicit unsupported choices (0.7433ms)
+✔ reply delivery comes from the responding character and a stable negative row supplies a fallback reason (0.5988ms)
+✔ a 300-minor-unit listing blocks 200, scores 300 and 400, and uses only observed restrictions (1.7074ms)
+✔ the same above-list offer can be refused by a known scoring factor with acceptance still eligible (0.4092ms)
+✔ the private scorecard accounts for sources, personality weights, directed warmth and zero immediate risk (1.0034ms)
+✔ known circumstances carry their own receipts, and unknown circumstances cannot influence a scorecard (1.7742ms)
+✔ the authored taste distinguishes actual receipt fit from passing prominence (0.293ms)
+✔ shopper chooses by authored budget weights then lowest marked price and first seen (3.7258ms)
+✔ marked prices score against the matching want budget before comparing list prices (1.2986ms)
+✔ an unaffordable preferred product stays ranked while an affordable alternative can be bought (0.7129ms)
+✔ a missing legitimate reference, matching want or marked price cannot produce an opening offer (0.309ms)
+✔ a received unavailability blocks Buy and undisclosed actual stock does not change the result (0.4947ms)
+✔ the shopper offers to buy another observed item when the preferred one is known unavailable (0.5858ms)
+✔ the opening draws its delivery and priority modifiers from the shopper profile (0.297ms)
+ℹ tests 67
+ℹ suites 0
+ℹ pass 67
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2579.6379

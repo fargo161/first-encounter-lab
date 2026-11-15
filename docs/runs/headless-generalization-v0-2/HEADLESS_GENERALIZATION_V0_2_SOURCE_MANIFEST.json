@@ -1,0 +1,342 @@
+{
+  "schema": "first-encounter-lab/headless-generalization-source-inventory@1",
+  "branch": "codex/headless-generalization-v0-2",
+  "candidate": "4fbd313529bc23771d4c629eb452239110001348",
+  "reviewedHistoricalDelivery": "9088cd2fd9bf162319e745853930f8ea2cc40375",
+  "separateStep0Commit": "e71043d66c45239b7a9db5b2851fad58db592515",
+  "priorPublicMain": "1278b705302da2b1bbd8b0edcca62d63a66fc866",
+  "node": "v24.22.1",
+  "pathHashBasis": "Exact Git blob bytes. Independent evidence is added later without changing production source.",
+  "changedPaths": [
+    {
+      "path": "AGENTS.md",
+      "blob": "0888caee8ed36d6eb6508bc940a24269def468d4",
+      "bytes": 3337,
+      "sha256": "d4ed352524c283ae7deb5a3237da3bcdb3df384dfb9615054a4596714e9ab24a"
+    },
+    {
+      "path": "README.md",
+      "blob": "efdd01748cfc0d24fc45d6ad4e64cea5e0d62aff",
+      "bytes": 4350,
+      "sha256": "c1a7f18c7a5f9432cf54b94152e912bf2214bfe0687f555c9b0aac7099ee8ffe"
+    },
+    {
+      "path": "communication/purchase-meaning.mjs",
+      "blob": "4156378b431fb7e113e02df941e551af81f3cf08",
+      "bytes": 15701,
+      "sha256": "fe09b225fe0be643ff2781df302e1092983a787788da96d8b600607aa5494203"
+    },
+    {
+      "path": "content/personalities.json",
+      "blob": "1342de1781b26c01f2c4e4a80f7de6dd28907a5a",
+      "bytes": 480,
+      "sha256": "18f92ee69ed33f867a9ce759df9e2ada8329161f002af009d2a2e69ba4882d1c"
+    },
+    {
+      "path": "content/roles.json",
+      "blob": "30475b2881c4b89115f60a7f5f635301e756f805",
+      "bytes": 457,
+      "sha256": "5578fb076a3b2dd03d5b53682780fb7fd235c0dcdb4ead63561bc43b2a1f559b"
+    },
+    {
+      "path": "core/purchase.mjs",
+      "blob": "f8ee54855884c271af374457ad474a85c0bfef7a",
+      "bytes": 26004,
+      "sha256": "16752b22cc79a592afa180bb1deb5d9482bd6cdf8c0268f559c49f85c185ceff"
+    },
+    {
+      "path": "core/scenario.mjs",
+      "blob": "7b4be72192e93391c04f8e9e4fb9ab1e47e63232",
+      "bytes": 15490,
+      "sha256": "d0b4417ff03d49c935085abcf703c1d8dfcaa6c06469ecac37fe343ca21e8b81"
+    },
+    {
+      "path": "decisions/clerk.mjs",
+      "blob": "173bc9e2df82d7ceb5dd40b497b08bc3a26cc9e5",
+      "bytes": 13396,
+      "sha256": "d620275be52c598087ad6645254920d5a0967b07c582df56d8bebceda6ce4c7d"
+    },
+    {
+      "path": "decisions/shopper.mjs",
+      "blob": "0bc035c14b720846c0931d914aa04e02c453badf",
+      "bytes": 5363,
+      "sha256": "9f0bb9c4543ec07ac729f98a44bdd4cb9b252726335355e2ccf098e4ec7db359"
+    },
+    {
+      "path": "docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md",
+      "blob": "c25d44ea0745b9c07fc61fa859c9e4778ae86a68",
+      "bytes": 5973,
+      "sha256": "42d8a9ae79cbd3eba4088d9764f7160614ac65d2831b17063b7fe1af7439cb25"
+    },
+    {
+      "path": "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_KEYWRAPPING_MAPPING.md",
+      "blob": "e6c506d84c3a1985c1742750eeaf0b2fd6d7d917",
+      "bytes": 3223,
+      "sha256": "04147fe6bb486e80c79dd4621223347f354fe74bf265b2da2f18f8979d8b664a"
+    },
+    {
+      "path": "docs/runs/headless-generalization-v0-2/RUN_SCOPE.md",
+      "blob": "c2d3895b7826a3f56e59fe62c15b32edc5a14d34",
+      "bytes": 2729,
+      "sha256": "408e36f9ff30adc1582f247d548b6ab2177c9ba6d74b2c3c3da911201483ce0d"
+    },
+    {
+      "path": "docs/runs/headless-generalization-v0-2/generate-trace.mjs",
+      "blob": "d246da3b51bc56777828d6429fbbf5c163c7b3a7",
+      "bytes": 11671,
+      "sha256": "a09a15a4b1d90ebfecb29c425a90384546dcddb3f873d440bf699e32d496ad5d"
+    },
+    {
+      "path": "tests/support/action-resolution.mjs",
+      "blob": "608b0955f098dce62374988a7eadc60875c1fb3a",
+      "bytes": 341,
+      "sha256": "12d23335e14ce9aaf283628c97116c18f4671c388cd458258c60a65941994060"
+    },
+    {
+      "path": "tests/unit/communication/purchase-meaning.test.mjs",
+      "blob": "52a5c38fe2b990920273ebb4418b6bae8817379d",
+      "bytes": 13207,
+      "sha256": "e6b9ff33f9045194cf30ea4582dbd75640ed8570bfb1ebfd446d89b80522c5a0"
+    },
+    {
+      "path": "tests/unit/core/purchase.test.mjs",
+      "blob": "a28630bf7be57d91bbd735de0c4c61fc7f86e6b5",
+      "bytes": 38014,
+      "sha256": "343af841bbebefd0706caed7a3d6d6515dd7b6241fbb7f2dbcdc29be200fe556"
+    },
+    {
+      "path": "tests/unit/decisions/clerk.test.mjs",
+      "blob": "d8f1d9cb9c6e66cbeda61345b9596868c5611c6b",
+      "bytes": 13243,
+      "sha256": "4a580c95f8f343180178021224dfd84a37d7f99111763ed0e52cce6ee3984002"
+    },
+    {
+      "path": "tests/unit/decisions/shopper.test.mjs",
+      "blob": "c64d30dab3ec7d889789cb7849cca034395766f1",
+      "bytes": 6980,
+      "sha256": "24a8fed48bce9ea038b39daa6a4d695e96d977ef18f4344564d8fedcd5aaafac"
+    }
+  ],
+  "protectedSources": [
+    {
+      "path": "docs/architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md",
+      "blob": "ba8da071caebdda65c1d33c19aa17e12af7db2c5",
+      "bytes": 72387,
+      "sha256": "55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2"
+    },
+    {
+      "path": "docs/decisions/DECISION_REGISTER.md",
+      "blob": "6aeed2c3dbf8ccd06a058355843c6227888df093",
+      "bytes": 11878,
+      "sha256": "32bdcffd1b9a6ea64cc0fa541222d2dbcf5ce860505e86746e860b67b532939b"
+    },
+    {
+      "path": "docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md",
+      "blob": "cce01eff8b26ccb37f36e5aa008c04afdb9449ae",
+      "bytes": 8902,
+      "sha256": "e5bb4ed4d2afce0fb3995a4e78066284e99c75b65b3ea45d89469cacd86f189e"
+    },
+    {
+      "path": "docs/decisions/OPEN_APPROVALS.md",
+      "blob": "bda05c3586125fa716dcd85721b0081e52d8221f",
+      "bytes": 3746,
+      "sha256": "5f3b81214264fd107228ca8915d5fa0044e04abf2a1dce29026cf44c7b2cddb7"
+    },
+    {
+      "path": "docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md",
+      "blob": "6eb654dcd0702aaa301062d2c8e37e1dd3f6c7cf",
+      "bytes": 1295,
+      "sha256": "4a281ba06aec0249e7539f05ac5340101a7d46650dfb924b4091b36c624efd8e"
+    },
+    {
+      "path": "docs/design/FIRST_ENCOUNTER_LAB_DECISION_SPEC_v0_2.md",
+      "blob": "41ec06297d76d08f30248a684dd3ff9286beb4bd",
+      "bytes": 38229,
+      "sha256": "8d34cc75ea59434b4e2499b426c995ef24c24d7db6fa057fcf74f1753d9270c3"
+    },
+    {
+      "path": "docs/design/FIRST_ENCOUNTER_LAB_INTERACTION_DESIGN.md",
+      "blob": "0e3c1f340ce49faf1232e5117f0710e4da1de170",
+      "bytes": 19701,
+      "sha256": "2ccf9e66a6f9ba56b8272fba1ea3c8c028ec67530f5b97f8a160f9e77100c4d2"
+    },
+    {
+      "path": "docs/provenance/SOURCE_LOCK.json",
+      "blob": "a89dac027fc504c1c521e63594fe122b3b2fd5ed",
+      "bytes": 15506,
+      "sha256": "63936852e774aa8a3ecc59b07d76948a9bf233651c45ac8050549dbcd1caff06"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md",
+      "blob": "102b72a825536c7ed54aafe0b930b020491228d5",
+      "bytes": 7336,
+      "sha256": "4bfd2444c6210022730f377a23cf545175a8baeeefb7551659920b18a5886df6"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_EVIDENCE_INDEX.md",
+      "blob": "aac1acd25cf43d8c8fbed2f1fe7b116298b4b977",
+      "bytes": 1914,
+      "sha256": "d1d2c5e065351f79918c077bdde829bb7163cbbe7ce33b3dafbee7de825ac571"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_REPORT.sha256",
+      "blob": "b6fbc2268b10079d3a5b574c4503f54751cfe10f",
+      "bytes": 100,
+      "sha256": "ab57b58284f373d6ad58927e375fb7e20aacff5de99dd7cd4b3e97266aa28a8a"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_SOURCE_MANIFEST.json",
+      "blob": "5d5ee0d67e1dae1e48720b998f95e990ec7591c3",
+      "bytes": 8159,
+      "sha256": "fcdbd8b18e0451cc7f82c3fe7de79948018ea84e1e1a44a4e4f81beefad1d6a7"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_TRACE.json",
+      "blob": "16655ec0e4fec5c576eb2725ec58d2d6d2076095",
+      "bytes": 68327,
+      "sha256": "3d546e248996d8a5e4b1a0df3eb9d78e7fed41b99c9e7d7ed256bc7d3e9caa09"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/RUN_SCOPE.md",
+      "blob": "34039f1daece0dda1f1354bbc1d74a2e93b54e3a",
+      "bytes": 2260,
+      "sha256": "96b5cf422f638bd0671e696405b0db879f3e98022d3fe74c2e9368fa73637104"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/UNIT_TEST_RESULTS.txt",
+      "blob": "9e8f1662e88459443cf9908842d6583434ab788c",
+      "bytes": 2137,
+      "sha256": "c6bd431f889cc5aa85e8caccfbdf924f187d4b2d3b70651c7629798e8f40ad33"
+    },
+    {
+      "path": "docs/runs/headless-purchase-2026-11-15-v0-1/generate-trace.mjs",
+      "blob": "469de7e509846b7f65e00e89fb3193f850378422",
+      "bytes": 4648,
+      "sha256": "ef03ee4e4336619458ab01684615f2a1c02081821b55c1958ba96018f786c481"
+    },
+    {
+      "path": "docs/setup/REPOSITORY_SETUP_MANIFEST.sha256",
+      "blob": "cb53708731917a2c540f74a8a8ea8afdc36a89c3",
+      "bytes": 2038,
+      "sha256": "aab1be793dd6b41d72600cff004ea60ee03f35ee96baf6056aec3e21ce6e87bb"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+      "blob": "3e1aade0d1444521a0f4114e0d16955efbcd3f1d",
+      "bytes": 10930,
+      "sha256": "db7de91d1e53c687b4f0469238d51a9c95e8944ecbfb1388c975536aa4c96b78"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+      "blob": "3ba4efd1ac142c6892eff19a698eb8567911158f",
+      "bytes": 4545,
+      "sha256": "657d97f16704c973a7696c712a53e9afe55cecd40a4dfdfbbb5e331ef9eecf89"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs",
+      "blob": "b03710587fb6aeba93f6bfa578dc99be9dac45a6",
+      "bytes": 4955,
+      "sha256": "be8138af95f8a3b5758d08013dd171b581c41db7448c9efa880645b8014b0ab9"
+    }
+  ],
+  "replayInputs": [
+    {
+      "path": "communication/purchase-meaning.mjs",
+      "blob": "4156378b431fb7e113e02df941e551af81f3cf08",
+      "bytes": 15701,
+      "sha256": "fe09b225fe0be643ff2781df302e1092983a787788da96d8b600607aa5494203"
+    },
+    {
+      "path": "content/based-cues.json",
+      "blob": "ac37f1296d3c0d5b14703762c0613028a8687e08",
+      "bytes": 447,
+      "sha256": "ed64f5cfdd5680702f5cebc3a08e47a6768a9589a329a7599a9a2cd0f9c3517c"
+    },
+    {
+      "path": "content/personalities.json",
+      "blob": "1342de1781b26c01f2c4e4a80f7de6dd28907a5a",
+      "bytes": 480,
+      "sha256": "18f92ee69ed33f867a9ce759df9e2ada8329161f002af009d2a2e69ba4882d1c"
+    },
+    {
+      "path": "content/products.json",
+      "blob": "f96bf2f1131c869ea009e72be8284980f53f1cfc",
+      "bytes": 271,
+      "sha256": "9ba07f4b767cd2ac94e9e143efd50b322cf0757143a891399a4c360b793dd443"
+    },
+    {
+      "path": "content/roles.json",
+      "blob": "30475b2881c4b89115f60a7f5f635301e756f805",
+      "bytes": 457,
+      "sha256": "5578fb076a3b2dd03d5b53682780fb7fd235c0dcdb4ead63561bc43b2a1f559b"
+    },
+    {
+      "path": "core/purchase.mjs",
+      "blob": "f8ee54855884c271af374457ad474a85c0bfef7a",
+      "bytes": 26004,
+      "sha256": "16752b22cc79a592afa180bb1deb5d9482bd6cdf8c0268f559c49f85c185ceff"
+    },
+    {
+      "path": "core/scenario.mjs",
+      "blob": "7b4be72192e93391c04f8e9e4fb9ab1e47e63232",
+      "bytes": 15490,
+      "sha256": "d0b4417ff03d49c935085abcf703c1d8dfcaa6c06469ecac37fe343ca21e8b81"
+    },
+    {
+      "path": "decisions/clerk.mjs",
+      "blob": "173bc9e2df82d7ceb5dd40b497b08bc3a26cc9e5",
+      "bytes": 13396,
+      "sha256": "d620275be52c598087ad6645254920d5a0967b07c582df56d8bebceda6ce4c7d"
+    },
+    {
+      "path": "decisions/shopper.mjs",
+      "blob": "0bc035c14b720846c0931d914aa04e02c453badf",
+      "bytes": 5363,
+      "sha256": "9f0bb9c4543ec07ac729f98a44bdd4cb9b252726335355e2ccf098e4ec7db359"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+      "blob": "3e1aade0d1444521a0f4114e0d16955efbcd3f1d",
+      "bytes": 10930,
+      "sha256": "db7de91d1e53c687b4f0469238d51a9c95e8944ecbfb1388c975536aa4c96b78"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+      "blob": "3ba4efd1ac142c6892eff19a698eb8567911158f",
+      "bytes": 4545,
+      "sha256": "657d97f16704c973a7696c712a53e9afe55cecd40a4dfdfbbb5e331ef9eecf89"
+    },
+    {
+      "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs",
+      "blob": "b03710587fb6aeba93f6bfa578dc99be9dac45a6",
+      "bytes": 4955,
+      "sha256": "be8138af95f8a3b5758d08013dd171b581c41db7448c9efa880645b8014b0ab9"
+    }
+  ],
+  "candidateTree": "ce2589dc9b1bfdcd9d61662964cd23570a554415",
+  "independentVerification": {
+    "candidate": "4fbd313529bc23771d4c629eb452239110001348",
+    "exportSha256": "3570b912da97837c2630b28156c6705e909c9b194a0cab87b6860162d43b4229",
+    "testPath": "tests/independent/headless-purchase.test.mjs",
+    "testSha256": "5765d8fc5e19df083bf30e91632fba11f315b4df45b8e3154ab9ea34c83da4e6",
+    "reportPath": "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_A7_REVIEW.md",
+    "reportSha256": "203ed4aee6c83e1d71a8416f12b719cbadf3072e807a3f89feba9e1e27fe4528",
+    "node": "v24.22.1",
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "verdict": "PASS"
+  },
+  "followOnEvidencePaths": [
+    "README.md",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_BUILD_REPORT.md",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_REGRESSION_MAP.md",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_EVIDENCE_INDEX.md",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_TRACE.json",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_A7_REVIEW.md",
+    "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_SOURCE_MANIFEST.json",
+    "docs/runs/headless-generalization-v0-2/TEST_RESULTS.txt",
+    "docs/provenance/build-locks/2026-11-15-v0-2.json",
+    "tests/independent/headless-purchase.test.mjs"
+  ]
+}

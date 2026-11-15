@@ -1,0 +1,80 @@
+{
+  "schema": "first-encounter-lab/build-source-lock@1",
+  "date": "2026-11-15",
+  "scope": "Local Headless Generalization v0.2 Steps 1–5",
+  "candidateCommit": "4fbd313529bc23771d4c629eb452239110001348",
+  "candidateTree": "ce2589dc9b1bfdcd9d61662964cd23570a554415",
+  "node": "v24.22.1",
+  "originBaseline": "1278b705302da2b1bbd8b0edcca62d63a66fc866",
+  "historicalDelivery": "9088cd2fd9bf162319e745853930f8ea2cc40375",
+  "firstEncounterGame": {
+    "revision": "cc8371c3c497edcdcfb8a73ec7da9dad4663847a",
+    "trackedWorktreeChanges": 0,
+    "samePreExistingUntrackedHashes": 16
+  },
+  "m3": {
+    "revision": "76a92fd82ac5ec6f10748f0b439a5d661fff5ea5",
+    "qualifiedHistoricalFailure": "IR3-25",
+    "exactImports": [
+      {
+        "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs",
+        "blob": "3e1aade0d1444521a0f4114e0d16955efbcd3f1d",
+        "bytes": 10930,
+        "sha256": "db7de91d1e53c687b4f0469238d51a9c95e8944ecbfb1388c975536aa4c96b78"
+      },
+      {
+        "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs",
+        "blob": "3ba4efd1ac142c6892eff19a698eb8567911158f",
+        "bytes": 4545,
+        "sha256": "657d97f16704c973a7696c712a53e9afe55cecd40a4dfdfbbb5e331ef9eecf89"
+      },
+      {
+        "path": "vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs",
+        "blob": "b03710587fb6aeba93f6bfa578dc99be9dac45a6",
+        "bytes": 4955,
+        "sha256": "be8138af95f8a3b5758d08013dd171b581c41db7448c9efa880645b8014b0ab9"
+      }
+    ]
+  },
+  "keyWrappingDesign": [
+    {
+      "file": "EXPRESSIONS_COMPATIBILITY.md",
+      "sha256": "d6f0250105d8de64dc0385fedef24ad9e20c75bbaf2dca17b4978eadfd78594d"
+    },
+    {
+      "file": "TRANSACTIONS_COMMITMENTS.md",
+      "sha256": "26c04efeaf6131d6a0cbf58098c910312ed71e893fa6af740b37d0857e337684"
+    },
+    {
+      "file": "JSON_RECORD_FAMILY.md",
+      "sha256": "5e05d3670ce1d65062dbc39b15a32bf22c8d9ec3e2faf287a2750d7702a3690e"
+    }
+  ],
+  "historicalLabPins": [
+    {
+      "path": "docs/architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md",
+      "blob": "ba8da071caebdda65c1d33c19aa17e12af7db2c5",
+      "bytes": 72387,
+      "sha256": "55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2"
+    },
+    {
+      "path": "docs/provenance/SOURCE_LOCK.json",
+      "blob": "a89dac027fc504c1c521e63594fe122b3b2fd5ed",
+      "bytes": 15506,
+      "sha256": "63936852e774aa8a3ecc59b07d76948a9bf233651c45ac8050549dbcd1caff06"
+    },
+    {
+      "path": "docs/setup/REPOSITORY_SETUP_MANIFEST.sha256",
+      "blob": "cb53708731917a2c540f74a8a8ea8afdc36a89c3",
+      "bytes": 2038,
+      "sha256": "aab1be793dd6b41d72600cff004ea60ee03f35ee96baf6056aec3e21ce6e87bb"
+    }
+  ],
+  "ownerApprovedExpression": "kw-expression@1",
+  "sourceManifest": "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_SOURCE_MANIFEST.json",
+  "trace": {
+    "path": "docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_TRACE.json",
+    "sha256": "43580bb583f3e1f198a1ebd6ad8b60fc885fb7515849836e62315416680042f4"
+  },
+  "independentProbeSha256": "5765d8fc5e19df083bf30e91632fba11f315b4df45b8e3154ab9ea34c83da4e6"
+}
