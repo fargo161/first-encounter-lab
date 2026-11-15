@@ -2,78 +2,31 @@
 
 ## Current status
 
-```yaml
-project: first-encounter-lab
-status_updated_at: 2026-11-15T01:36:19-05:00
-phase: headless_purchase_review
-active_authorization: stopped_at_headless_purchase_review
-latest_owner_build_authorization: docs/runs/headless-purchase-2026-11-15-v0-1/RUN_SCOPE.md
-last_reviewed_source_commit: 1278b705302da2b1bbd8b0edcca62d63a66fc866
-tested_headless_candidate: 27b7f93a40fecccd139007204b3ce04580409dd2
-local_review_branch: codex/headless-purchase-v0_1-2026-11-15
-candidate_publication: local_only
-headless_purchase_a7_verdict: PASS
-latest_build_report: docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md
-c6_contract: approved
-c6_contract_sha256: 55c8094417ead764421825aa19706d26137c456bbb9f2484f40c7d2d47d7afd2
-real_room_candidate: not_delivered
-shared_c6_suite: not_delivered
-claude_browser_baseline: not_available
-standin_status: not_built
-playable_lab_status: not_built
-next_gate: teddy_and_nova_headless_review
-```
+- Scope is the local Headless Generalization v0.2 Steps 1–5 authorized by Teddy. The latest verified implementation checkpoint is Step 1. [Run scope](docs/runs/headless-generalization-v0-2/RUN_SCOPE.md)
+- Review branch is codex/headless-generalization-v0-2. The previous reviewed v0.1 delivery is 9088cd2fd9bf162319e745853930f8ea2cc40375. Public baseline remains 1278b705302da2b1bbd8b0edcca62d63a66fc866.
+- 24 Step 1 unit tests passed, 0 failed. Node 24.22.1 on Windows. The historical v0.1 runner passed 29 tests and retains its own saves and trace. [v0.1 report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md)
 
-The local review branch contains one implemented headless Pay-for-Give purchase. Work stops here for Teddy and Nova's review. [Build report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md)
+First Encounter Lab is a Trapstar gameplay tile. A clerk and customer share one store state, while each only knows what they have legitimately received. BASED governs delivery. KeyWrapping records communicative meaning in one versioned expression, and Encounter records what happened.
 
-## What this project is
+## What works
 
-First Encounter Lab is the first reusable Trapstar gameplay tile. A clerk and customer share the same store state, language, and decision rules. Either can be the player in a separate run. BASED changes delivery, while KeyWrapping tracks meaning, assent and remembered arrangements.
+- One immediate Pay-for-Give sale works with either initiator. Separate actor cash accounts, the till and individually owned and held units support multiple proposals and two different sales in one run. Pay and handover are separate native effects. Restore and exact receipt replay preserve the ledger.
 
-The delivered scope is one headless purchase. The target remains an offline browser experience with portable saves. ROOM supplies physical evidence in a later scope, and Encounter owns observations, actions and their consequences.
+New headless saves use kw-expression@1. Open an old v0.1 save with the runner at 9088cd2fd9bf162319e745853930f8ea2cc40375. [Format](docs/architecture/KW_EXPRESSION_V0_2_FORMAT.md) · [$3 transaction comparison](docs/runs/headless-generalization-v0-2/HEADLESS_GENERALIZATION_V0_2_KEYWRAPPING_MAPPING.md)
 
-## What actually works now
+## Reproduce
 
-| Area | Status | Tested against | Evidence |
-|---|---|---|---|
-| Headless purchase | Known item, exact offer/assent, deterministic clerk ranking, separate payment/handover, recorded partial failure, retry, save/replay and both controller assignments. | Tested local candidate on Node 24.22.1. | [Actual transaction trace](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_TRACE.json) |
-| Independent proof | A7 PASS. Exit 0. 9 pass, 0 fail, 0 skip. | Clean export of `27b7f93` plus independently authored verification. | [A7 findings](docs/reviews/HEADLESS_PURCHASE_A7_REVIEW_2026-11-15.md) |
-| Producer rules | M3 journal, validation and observation helpers imported exactly. Bounded references held at their reviewed pins. | M3 `76a92fd`, Economy/EA-IE `cc8371c`, KeyWrapping `22c06dc`. Producer IR3-25 remains the one qualified historical failure. | [Source inventory](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_SOURCE_MANIFEST.json) · [Earlier evidence](docs/preflight/agent-run-2026-11-15-c6-v2/FIRST_ENCOUNTER_LAB_AGENT_RUN_PREFLIGHT_REPORT.md#g-test-and-browser-evidence) |
-| Real ROOM / official stand-in | Revised C6 approved as written. Real candidate and Nova's shared suite pending, official stand-in unbuilt. | Combat Room v0.1.1 and archived overlay remain historical evidence. | [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Step 1](docs/architecture/ROOM_C6_STEP1_READ_ONLY_INSPECTION_REPORT.md) |
-| Browser and delivery | Claude baseline unavailable. UI, art integration, offline HTML and native Windows playthrough remain future work. | No playable Lab artifact. | [Physical and delivery gates](docs/decisions/OPEN_APPROVALS.md) |
+Select Node 24.22.1 and run from this review branch.
 
-## Read these first
+    node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs
 
-1. [Run scope](docs/runs/headless-purchase-2026-11-15-v0-1/RUN_SCOPE.md), [build report](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_BUILD_REPORT.md) and [A7 findings](docs/reviews/HEADLESS_PURCHASE_A7_REVIEW_2026-11-15.md).
-2. [Master design](FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md) and [M01–M06 approvals](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md).
-3. [Approved C6](docs/architecture/ROOM_C6_PHYSICAL_CONTROL_CONTRACT_v0_1_REVISED.md) and [Step 1](docs/architecture/ROOM_C6_STEP1_READ_ONLY_INSPECTION_REPORT.md).
-4. [Original source lock](docs/provenance/SOURCE_LOCK.json), [local build pins](docs/provenance/build-locks/2026-11-15-v0-1.json), [ownership plan](docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md) and [acceptance matrix](docs/testing/ACCEPTANCE_MATRIX.md).
+Historical v0.1 tests and trace generator run from the v0.1 checkout.
 
-## Current blockers and next actions
+## Source and integration gates
 
-- **Teddy and Nova review.** Inspect the trace, exact-source inventory and A7 verdict. Any next checkpoint or public implementation push needs a separate authorization.
-- **Nova's ROOM interface.** Real tests need the reviewed wire cases, separately authorized candidate, exact shared suite and accepted scene. A4's future work remains limited to a Lab bridge and the official stand-in.
-- **Claude's browser baseline.** Matching unchanged original and overlay baselines are still unavailable. Final native Windows and delivery checks remain separate.
+- M3 is pinned at 76a92fd82ac5ec6f10748f0b439a5d661fff5ea5. The Lab uses its native validation, journal, receipts and observation projection. The inherited IR3-25 result remains a qualified historical failure.
+- First Encounter Game is verified at cc8371c3c497edcdcfb8a73ec7da9dad4663847a. [Original source lock](docs/provenance/SOURCE_LOCK.json) · [Master design](FIRST_ENCOUNTER_LAB_MASTER_DESIGN.md) · [Owner decisions](docs/decisions/FIRST_ENCOUNTER_LAB_OWNER_APPROVALS_M01_M06_2026-11-14.md)
+- The real ROOM candidate and Nova’s shared C6 suite are pending. Claude’s matched browser baseline is unavailable. The approved C6 contract is the input for those gates. The official stand-in, playable UI, art, holds, deposits and return visits are outside this scope. [C6 receipt](docs/decisions/ROOM_C6_OWNER_APPROVAL_RECEIPT_2026-11-15.md) · [Remaining gates](docs/decisions/OPEN_APPROVALS.md)
+- A1 owns state, A2 expression and communication, and A3 policy. The Lead owns integration and this handoff. A7 independently reviews the committed Step 5 candidate. [Ownership plan](docs/architecture/AGENT_OWNERSHIP_AND_HANDOFFS.md)
 
-## How to run and test
-
-From the local review checkout with Node 24.22.1 selected:
-
-```text
-node --test tests/unit/core/purchase.test.mjs tests/unit/communication/purchase-meaning.test.mjs tests/unit/decisions/clerk.test.mjs
-node --test tests/independent/headless-purchase.test.mjs
-node docs/runs/headless-purchase-2026-11-15-v0-1/generate-trace.mjs
-```
-
-The trace uses scenario-domain observations. There is no playable UI or standalone HTML. [Fresh runner evidence](docs/runs/headless-purchase-2026-11-15-v0-1/HEADLESS_PURCHASE_EVIDENCE_INDEX.md)
-
-## Team and checkpoint
-
-A1 built the ledger, receipts and saves, A2 the purchase language, and A3 the pure clerk policy. A7 reviewed independently after implementation. The Lead integrated and maintains this handoff. All assignments are stopped. The latest result is the headless proof below integrated checkpoint A. [Future checkpoints](docs/architecture/BUILD_CHECKPOINTS.md)
-
-## Recent changes and resume
-
-- Implemented the versioned M3-derived purchase and checked the paid-but-unfulfilled save, retry and replay.
-- Recorded independent tests, exact source inventory and the local review handoff.
-
-Resume by checking this branch, the tested candidate and the report checksum. Read the scope and A7 review before any further work. The next action is Teddy and Nova's review.
+The next permitted action is Step 2 of this run after the current checkpoint is green.

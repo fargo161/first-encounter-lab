@@ -1,16 +1,17 @@
 import { canonicalJson, ContractError, copy, fields, freeze, id, isRecord, requireThat } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { createRun, executeCommand, validateRun } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/runtime.mjs';
-import { compileAcceptance, compileOffer, observePurchaseMessage } from '../communication/purchase-meaning.mjs';
+import {
+  compileAcceptance, compileOffer, exchangeTerms, expressionReference, observePurchaseMessage,
+} from '../communication/purchase-meaning.mjs';
 import { chooseClerkResponse, CLERK_PROFILE } from '../decisions/clerk.mjs';
 import {
-  actorView, BUYER_ID, CLERK_ID, configureScenario, initialState, nextId,
-  observeEvent, PACKAGE_REF, PRICE_MINOR, PRODUCT_ID, recordEvent, STORE_ID, validateLedger,
+  actorView, configureScenario, initialState, nextId, observeEvent, recordEvent, scenarioPackageRef, validateLedger,
 } from './scenario.mjs';
 
-export { BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, UNKNOWN_PRODUCT_ID } from './scenario.mjs';
+export { BUYER_ID, CLERK_ID, PRICE_MINOR, PRODUCT_ID, STORE_ID, UNIT_ID, UNKNOWN_PRODUCT_ID } from './scenario.mjs';
 
-const SAVE_SCHEMA = 'lab-headless-purchase-save@1';
-const PROPOSAL_ID = 'proposal_0001';
+const SAVE_SCHEMA = 'lab-headless-generalization-save@1';
+const EXPRESSION_SCHEMA = 'kw-expression@1';
 const actions = freeze({
   offer: 'send_message',
   accept: 'send_message',
@@ -22,221 +23,235 @@ const actions = freeze({
 const safeRuleErrors = new Set([
   'AMBIGUOUS_ASSENT', 'STALE_PROPOSAL', 'WRONG_ACTOR', 'WRONG_CONTROLLER', 'WRONG_RECIPIENT',
   'UNKNOWN_REFERENCE', 'UNSUPPORTED_TERMS', 'UNAVAILABLE_EXPRESSION', 'NO_RECEIVING_PATH',
-  'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_NOT_ACCEPTED',
+  'OFFER_CLOSED', 'ACCEPTANCE_INELIGIBLE', 'RESPONSE_NOT_ACCEPTED', 'INVALID_TERMS',
   'INSUFFICIENT_FUNDS', 'OUT_OF_STOCK', 'PAYMENT_REQUIRED', 'ALREADY_PAID', 'ALREADY_FULFILLED',
 ]);
 
-function currentProposal(data, reference) {
+function currentProposal(data, reference, actorId) {
   requireThat(isRecord(reference) && Object.hasOwn(reference, 'id') &&
     Object.hasOwn(reference, 'version') && Object.keys(reference).length === 2, 'AMBIGUOUS_ASSENT');
-  const proposal = data.proposals.at(-1);
-  requireThat(proposal?.id === reference.id && proposal.version === reference.version, 'STALE_PROPOSAL');
-  return proposal;
+  const latest = data.proposals.findLast(proposal => proposal.id === reference.id &&
+    (actorId === undefined || proposal.participants.includes(actorId)));
+  requireThat(latest?.version === reference.version, 'STALE_PROPOSAL');
+  return latest;
 }
 
-function receiveMessage(data, message, observerId) {
+function offerRecord(data, proposal) {
+  const offer = data.messages.find(message => message.id === proposal.offerMessageId);
+  requireThat(offer, 'STALE_PROPOSAL');
+  return offer;
+}
+
+function messageFields(data, command) {
+  return {
+    scope: { producer: 'first-encounter-lab', runId: command.sessionId, packageRef: command.packageRef },
+    sequence: data.messages.length + 1,
+    id: nextId('message', data.messages.length),
+  };
+}
+
+function receiveMessage(data, message) {
   const observation = observePurchaseMessage(message, {
     observationId: nextId('observation', data.observations.length),
-    observerId,
+    observerId: message.expression.addressees[0],
   });
   data.messages.push(message);
   data.observations.push(observation);
   return observation;
 }
 
-function clerkInputs(data, proposal) {
-  const clerk = actorView(data, CLERK_ID);
-  const offerObservation = clerk.observations.find(entry => entry.source.kind === 'message' &&
-    entry.source.id === proposal.offerMessageId);
-  requireThat(offerObservation, 'NO_RECEIVING_PATH');
-  const outward = offerObservation.receivedDetails.communication;
-  const [payment, handover] = outward.terms.exchange;
-  const product = clerk.references.find(entry => entry.productId === handover.productId);
-  const judgment = data.judgments.find(entry => entry.actorId === CLERK_ID && entry.towardId === outward.senderId);
+function messageResult(event, proposal, message, observation) {
   return {
-    offerObservation,
-    view: freeze(copy({
-      actorId: CLERK_ID,
-      role: clerk.actor.role,
-      profile: CLERK_PROFILE,
-      warmth: judgment?.warmth ?? 0,
-      offer: {
-        proposalId: outward.terms.proposalId,
-        version: outward.terms.version,
-        productId: handover.productId,
-        amountMinor: payment.amountMinor,
-        observationId: offerObservation.id,
-        cues: outward.framing,
-        prominence: outward.prominence,
-      },
-      product: product ? {
-        productId: product.productId,
-        priceMinor: product.priceMinor,
-        available: product.available ?? null,
-        observationId: product.observationId,
-      } : null,
-    })),
+    type: event.type, eventId: event.id, proposalId: proposal.id, version: proposal.version,
+    messageId: message.id, observationId: observation.id,
   };
 }
 
-function makeOffer(data, command) {
+function makeOffer(data, command, settings) {
   const { payload } = command;
-  fields(payload, ['action', 'actorId', 'recipientId', 'productId', 'amountMinor', 'vibe', 'salience']);
-  requireThat(payload.actorId === BUYER_ID, 'WRONG_ACTOR');
-  requireThat(payload.recipientId === CLERK_ID, 'WRONG_RECIPIENT');
-
-  const last = data.proposals.at(-1);
-  requireThat(!last || last.status === 'open', 'OFFER_CLOSED');
-  const version = last ? last.version + 1 : 1;
-  const draft = {
-    productId: payload.productId,
-    amountMinor: payload.amountMinor,
-    vibe: payload.vibe,
-    salience: payload.salience,
-  };
-  const message = compileOffer({
-    commandId: command.id,
-    sequence: data.messages.length + 1,
-    buyerId: BUYER_ID,
-    sellerId: CLERK_ID,
-    proposalId: PROPOSAL_ID,
-    version,
-    draft,
-    references: actorView(data, BUYER_ID).references.map(({ productId, unitId, label, priceMinor }) => ({
-      productId, unitId, label, priceMinor,
-    })),
-  });
-  const observation = receiveMessage(data, message, CLERK_ID);
-  const [payment, handover] = message.outward.terms.exchange;
+  fields(payload, ['action', 'actorId', 'recipientId', 'productId', 'amountMinor', 'vibe', 'salience'], ['unitId', 'supersedes']);
+  const sender = data.actors.find(actor => actor.id === payload.actorId);
+  const receiver = data.actors.find(actor => actor.id === payload.recipientId);
+  requireThat(sender && ['clerk', 'customer'].includes(sender.role), 'WRONG_ACTOR');
+  const expected = sender.role === 'clerk' ? 'customer' : 'clerk';
+  requireThat(receiver?.role === expected, 'WRONG_RECIPIENT');
+  const known = actorView(data, sender.id).references.find(item =>
+    item.productId === payload.productId && (payload.unitId === undefined || item.unitId === payload.unitId));
+  requireThat(known, 'UNKNOWN_REFERENCE');
+  let prior = null;
+  if (payload.supersedes !== undefined) {
+    prior = currentProposal(data, payload.supersedes, sender.id);
+    requireThat(prior.status === 'open', 'OFFER_CLOSED');
+    const previous = offerRecord(data, prior);
+    requireThat(previous.expression.speaker === sender.id && previous.expression.addressees[0] === receiver.id, 'WRONG_RECIPIENT');
+  }
   const proposal = {
-    id: PROPOSAL_ID, version, buyerId: BUYER_ID, sellerId: CLERK_ID,
-    productId: handover.productId, unitId: handover.unitId, amountMinor: payment.amountMinor,
-    offerMessageId: message.id, status: 'open',
+    id: prior?.id ?? nextId('proposal', data.proposals.length),
+    version: prior ? prior.version + 1 : 1,
+    participants: [sender.id, receiver.id],
+    status: 'open',
   };
-  if (last) last.status = 'superseded';
+  const buyerId = sender.role === 'customer' ? sender.id : receiver.id;
+  const sellerId = sender.role === 'clerk' ? sender.id : receiver.id;
+  const message = compileOffer({
+    ...messageFields(data, command),
+    speaker: sender.id,
+    recipient: receiver.id,
+    proposal: {
+      id: proposal.id,
+      version: proposal.version,
+      parent: prior ? expressionReference(offerRecord(data, prior).expression) : null,
+    },
+    terms: {
+      buyerId, sellerId, productId: known.productId, unitId: known.unitId, storeId: settings.store.id,
+      currency: settings.currency, amountMinor: payload.amountMinor,
+    },
+    delivery: { vibe: payload.vibe, salience: payload.salience },
+    label: known.label ?? 'the item',
+  });
+  const observation = receiveMessage(data, message);
+  proposal.offerMessageId = message.id;
+  if (prior) prior.status = 'superseded';
   data.proposals.push(proposal);
-  const event = recordEvent(data, 'offer', command.id, { proposalId: proposal.id, version, messageId: message.id });
-  return { type: event.type, eventId: event.id, proposalId: proposal.id, version, messageId: message.id, observationId: observation.id };
+  const event = recordEvent(data, 'offer', command.id, { proposalId: proposal.id, version: proposal.version, messageId: message.id });
+  return messageResult(event, proposal, message, observation);
+}
+
+function responseContext(data, proposal, actorId) {
+  requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
+  const local = actorView(data, actorId);
+  const offer = offerRecord(data, proposal);
+  requireThat(offer.expression.addressees[0] === actorId, 'WRONG_RECIPIENT');
+  const receipt = local.observations.find(entry => entry.source.kind === 'message' && entry.source.id === offer.id);
+  requireThat(receipt, 'NO_RECEIVING_PATH');
+  const { expression, framing, prominence } = receipt.receivedDetails.communication;
+  const { productId, unitId, amountMinor } = exchangeTerms(expression);
+  const product = local.references.find(entry => entry.unitId === unitId);
+  const input = {
+    actorId, role: local.actor.role, profile: CLERK_PROFILE,
+    offer: { proposalId: proposal.id, version: proposal.version, productId, amountMinor, observationId: receipt.id, cues: framing, prominence },
+    product,
+  };
+  const decision = local.actor.role === 'clerk' ? chooseClerkResponse(input) : {
+    actorId, proposalId: proposal.id, version: proposal.version,
+    selected: product.available === false ? 'Refuse' : 'Accept',
+    candidates: [{ act: 'Accept', eligible: product.available !== false }],
+  };
+  return { actor: local.actor, decision, offer, receipt };
 }
 
 function acceptOffer(data, command) {
   const { payload } = command;
   fields(payload, ['action', 'actorId'], ['reference']);
-  requireThat(payload.actorId === CLERK_ID, 'WRONG_ACTOR');
-  const clerk = data.actors.find(actor => actor.id === CLERK_ID);
-  requireThat(clerk.controller === (payload.action === 'respond' ? 'rules' : 'human'), 'WRONG_CONTROLLER');
-  const proposal = currentProposal(data, payload.reference);
-  requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
-
-  const { offerObservation, view } = clerkInputs(data, proposal);
-  const decision = chooseClerkResponse(view);
+  const proposal = currentProposal(data, payload.reference, payload.actorId);
+  const { actor, decision, offer, receipt } = responseContext(data, proposal, payload.actorId);
+  requireThat(actor.controller === (payload.action === 'respond' ? 'rules' : 'human'), 'WRONG_CONTROLLER');
   if (payload.action === 'respond') requireThat(decision.selected === 'Accept', 'RESPONSE_NOT_ACCEPTED');
   requireThat(decision.candidates.some(candidate => candidate.act === 'Accept' && candidate.eligible), 'ACCEPTANCE_INELIGIBLE');
-
   const message = compileAcceptance({
-    commandId: command.id,
-    sequence: data.messages.length + 1,
-    sellerId: CLERK_ID,
-    proposal,
+    ...messageFields(data, command),
+    speaker: actor.id,
+    recipient: offer.expression.speaker,
+    offer,
+    receipt,
     reference: payload.reference,
-    offerObservation,
+    delivery: { vibe: 'EA', salience: 'NUANCED' },
   });
-  const observation = receiveMessage(data, message, BUYER_ID);
-  proposal.status = 'agreed';
-  proposal.acceptanceMessageId = message.id;
-  data.decisions.push({
-    causeMessageId: proposal.offerMessageId,
-    responseMessageId: message.id,
-    mode: clerk.controller,
-    decision,
-  });
+  const observation = receiveMessage(data, message);
   const event = recordEvent(data, 'agreement', command.id, {
-    proposalId: proposal.id, version: proposal.version, offerMessageId: proposal.offerMessageId, acceptanceMessageId: message.id,
+    proposalId: proposal.id, version: proposal.version,
+    assent: [
+      { actorId: offer.expression.speaker, messageId: offer.id },
+      { actorId: actor.id, messageId: message.id },
+    ],
   });
+  proposal.status = 'agreed';
   proposal.agreementEventId = event.id;
-  return { type: event.type, eventId: event.id, proposalId: proposal.id, version: proposal.version, messageId: message.id, observationId: observation.id };
+  data.decisions.push({ causeMessageId: offer.id, responseMessageId: message.id, mode: actor.controller, decision });
+  return messageResult(event, proposal, message, observation);
 }
 
-function requireStock(ledger) {
-  requireThat(ledger.stock === 1 && ledger.ownerId === STORE_ID && ledger.holderId === CLERK_ID, 'OUT_OF_STOCK');
+function settlementContext(data, payload, performer) {
+  fields(payload, ['action', 'actorId', 'reference']);
+  const proposal = currentProposal(data, payload.reference, payload.actorId);
+  const terms = exchangeTerms(offerRecord(data, proposal).expression);
+  requireThat(payload.actorId === terms[performer], 'WRONG_ACTOR');
+  const unit = data.ledger.units.find(entry => entry.id === terms.unitId);
+  return { proposal, terms, unit };
 }
 
-function observeTransaction(data, event, priorEventIds = []) {
-  const roots = priorEventIds.map(eventId => ({ kind: 'event', id: eventId }));
-  return [BUYER_ID, CLERK_ID].map(actorId => observeEvent(data, event, actorId, ['transaction'], roots));
+function requireStock(data, proposal, terms, unit) {
+  requireThat(unit?.productId === terms.productId && unit.ownerId === terms.storeId && unit.holderId === terms.sellerId, 'OUT_OF_STOCK');
+  const claimed = data.proposals.some(candidate => candidate !== proposal && candidate.status === 'paid' &&
+    exchangeTerms(offerRecord(data, candidate).expression).unitId === terms.unitId);
+  requireThat(!claimed, 'OUT_OF_STOCK');
+}
+
+function observeTransaction(data, event, parties, priorEventId) {
+  const roots = [{ kind: 'event', id: priorEventId }];
+  return parties.map(actorId => observeEvent(data, event, actorId, ['transaction'], roots).id);
 }
 
 function pay(data, command) {
-  const { payload } = command;
-  fields(payload, ['action', 'actorId', 'reference']);
-  requireThat(payload.actorId === BUYER_ID, 'WRONG_ACTOR');
-  const proposal = currentProposal(data, payload.reference);
+  const { proposal, terms, unit } = settlementContext(data, command.payload, 'buyerId');
   requireThat(!['paid', 'fulfilled'].includes(proposal.status), 'ALREADY_PAID');
   requireThat(proposal.status === 'agreed', 'STALE_PROPOSAL');
-
-  // Execution sees the authoritative ledger; the rule evaluation sees only receipts.
-  requireStock(data.ledger);
-  requireThat(data.ledger.buyerCashMinor >= proposal.amountMinor, 'INSUFFICIENT_FUNDS');
-  data.ledger.buyerCashMinor -= proposal.amountMinor;
-  data.ledger.tillMinor += proposal.amountMinor;
-  const event = recordEvent(data, 'payment', command.id, { transaction: {
-    kind: 'payment', proposalId: proposal.id, version: proposal.version, amountMinor: proposal.amountMinor,
-    buyerId: BUYER_ID, storeId: STORE_ID, agreementEventId: proposal.agreementEventId,
-  } });
+  requireStock(data, proposal, terms, unit);
+  const source = data.ledger.accounts.find(account => account.id === terms.buyerId);
+  const till = data.ledger.accounts.find(account => account.id === terms.storeId);
+  requireThat(source.balanceMinor >= terms.amountMinor, 'INSUFFICIENT_FUNDS');
+  source.balanceMinor -= terms.amountMinor;
+  till.balanceMinor += terms.amountMinor;
+  const transaction = {
+    kind: 'payment', proposalId: proposal.id, version: proposal.version, amountMinor: terms.amountMinor,
+    buyerId: terms.buyerId, storeId: terms.storeId, currency: terms.currency, agreementEventId: proposal.agreementEventId,
+  };
+  const event = recordEvent(data, 'payment', command.id, { transaction });
   proposal.status = 'paid';
   proposal.paymentEventId = event.id;
-  const observations = observeTransaction(data, event, [proposal.agreementEventId]);
-  return { type: event.type, eventId: event.id, proposalId: proposal.id, version: proposal.version, observationIds: observations.map(entry => entry.id) };
+  const observationIds = observeTransaction(data, event, proposal.participants, proposal.agreementEventId);
+  return { type: event.type, eventId: event.id, proposalId: proposal.id, version: proposal.version, observationIds };
 }
 
 function handover(data, command, settings) {
-  const { payload } = command;
-  fields(payload, ['action', 'actorId', 'reference']);
-  requireThat(payload.actorId === CLERK_ID, 'WRONG_ACTOR');
-  const proposal = currentProposal(data, payload.reference);
+  const { proposal, terms, unit } = settlementContext(data, command.payload, 'sellerId');
   requireThat(proposal.status !== 'fulfilled', 'ALREADY_FULFILLED');
   requireThat(proposal.status === 'paid', 'PAYMENT_REQUIRED');
-  requireStock(data.ledger);
-
-  const terms = {
-    proposalId: proposal.id, version: proposal.version, unitId: proposal.unitId,
+  requireStock(data, proposal, terms, unit);
+  const transaction = {
+    proposalId: proposal.id, version: proposal.version, unitId: unit.id,
     paymentEventId: proposal.paymentEventId,
   };
   if (settings.failFirstHandover && !data.events.some(entry => entry.type === 'handover_failed')) {
     const reason = 'INJECTED_HANDOVER_FAILURE';
-    const event = recordEvent(data, 'handover_failed', command.id, { transaction: { kind: 'handover_failed', ...terms, reason } });
-    const observations = observeTransaction(data, event, [proposal.paymentEventId]);
-    return { type: event.type, eventId: event.id, ...terms, reason, observationIds: observations.map(entry => entry.id) };
+    const event = recordEvent(data, 'handover_failed', command.id, { transaction: { ...transaction, kind: 'handover_failed', reason } });
+    const observationIds = observeTransaction(data, event, proposal.participants, proposal.paymentEventId);
+    return { type: event.type, eventId: event.id, ...transaction, reason, observationIds };
   }
 
-  data.ledger.stock -= 1;
-  data.ledger.ownerId = BUYER_ID;
-  data.ledger.holderId = BUYER_ID;
-  const event = recordEvent(data, 'handover', command.id, { transaction: {
-    kind: 'handover', ...terms, buyerId: BUYER_ID, storeId: STORE_ID,
-  } });
+  unit.ownerId = terms.buyerId;
+  unit.holderId = terms.buyerId;
+  const event = recordEvent(data, 'handover', command.id, {
+    transaction: { ...transaction, kind: 'handover', buyerId: terms.buyerId, storeId: terms.storeId },
+  });
   proposal.status = 'fulfilled';
   proposal.handoverEventId = event.id;
-  const observations = observeTransaction(data, event, [proposal.paymentEventId]);
-  const clerkReceipt = observations.find(entry => entry.observerId === CLERK_ID);
-  const judgment = data.judgments.find(entry => entry.actorId === CLERK_ID && entry.towardId === BUYER_ID);
-  // The paid-to-fulfilled transition admits the cause once. The input is the clerk's actual scoped receipt.
-  judgment.warmth += 1;
-  judgment.causeObservationIds.push(clerkReceipt.id);
-  return { type: event.type, eventId: event.id, ...terms, observationIds: observations.map(entry => entry.id) };
+  const observationIds = observeTransaction(data, event, proposal.participants, proposal.paymentEventId);
+  return { type: event.type, eventId: event.id, ...transaction, observationIds };
 }
 
 const dispatch = { offer: makeOffer, accept: acceptOffer, respond: acceptOffer, pay, handover };
 
 function start(settings) {
-  return createRun({ id: settings.runId, packageRef: PACKAGE_REF, data: initialState(settings) });
+  return createRun({ id: settings.runId, packageRef: scenarioPackageRef(settings), data: initialState(settings) });
 }
 
 function submitToRun(run, command, settings) {
   let domainCode;
   const result = executeCommand(run, command, {
     validateNew(_data, submitted) {
-      return Object.hasOwn(actions, submitted.payload.action) && actions[submitted.payload.action] === submitted.kind;
+      const { action } = submitted.payload;
+      return Object.hasOwn(actions, action) && actions[action] === submitted.kind;
     },
     resolve(data, submitted) {
       try {
@@ -250,8 +265,7 @@ function submitToRun(run, command, settings) {
       return validateLedger(data, settings);
     },
   });
-  if (result.status !== 'rejected') return result;
-  return { ...result, code: domainCode ?? result.code };
+  return result.status === 'rejected' ? { ...result, code: domainCode ?? result.code } : result;
 }
 
 function replay(text) {
@@ -262,8 +276,13 @@ function replay(text) {
   } catch {
     throw new ContractError('INVALID_SAVE');
   }
-  fields(saved, ['schema', 'scenario', 'run']);
-  requireThat(saved.schema === SAVE_SCHEMA, 'INCOMPATIBLE_SAVE');
+  if (saved?.schema === 'lab-headless-purchase-save@1') {
+    const error = new ContractError('INCOMPATIBLE_SAVE_VERSION');
+    error.message = 'Replay this save with the historical v0.1 runner at commit 9088cd2fd9bf162319e745853930f8ea2cc40375.';
+    throw error;
+  }
+  fields(saved, ['schema', 'expressionSchema', 'scenario', 'run']);
+  requireThat(saved.schema === SAVE_SCHEMA && saved.expressionSchema === EXPRESSION_SCHEMA, 'INCOMPATIBLE_SAVE_VERSION');
   const settings = configureScenario(saved.scenario);
   validateRun(saved.run);
   let rebuilt = start(settings);
@@ -276,50 +295,77 @@ function replay(text) {
   return { settings, run: rebuilt };
 }
 
+/** The host owns this session. Only give actors a handle from forActor(). */
 export function createPurchase(options = {}) {
   let settings = configureScenario(options);
   let run = start(settings);
+  let generation = 0;
+
+  function command(commandId, action, args) {
+    id(commandId, 'command');
+    requireThat(Object.hasOwn(actions, action), 'UNSUPPORTED_COMMAND');
+    return freeze(copy({
+      schema: 'encounter-command@2',
+      id: commandId,
+      sessionId: run.id,
+      packageRef: run.packageRef,
+      expectedRevision: run.revision,
+      kind: actions[action],
+      payload: { ...copy(args), action },
+    }));
+  }
+
+  function submit(submitted) {
+    const outcome = submitToRun(run, submitted, settings);
+    run = outcome.run;
+    if (outcome.status === 'rejected') return { status: 'rejected', code: outcome.code };
+    return { status: outcome.status, receipt: outcome.receipt };
+  }
+
+  function decide(reference, actorId) {
+    const proposal = currentProposal(run.data, reference, actorId);
+    return responseContext(run.data, proposal, actorId ?? offerRecord(run.data, proposal).expression.addressees[0]).decision;
+  }
 
   return Object.freeze({
-    command(commandId, action, args) {
-      id(commandId, 'command');
-      requireThat(Object.hasOwn(actions, action), 'UNSUPPORTED_COMMAND');
-      return freeze(copy({
-        schema: 'encounter-command@2',
-        id: commandId,
-        sessionId: run.id,
-        packageRef: run.packageRef,
-        expectedRevision: run.revision,
-        kind: actions[action],
-        payload: { ...copy(args), action },
-      }));
-    },
-    submit(command) {
-      const outcome = submitToRun(run, command, settings);
-      run = outcome.run;
-      if (outcome.status === 'rejected') return { status: 'rejected', code: outcome.code };
-      return { status: outcome.status, receipt: outcome.receipt };
+    command,
+    submit,
+    forActor(actorId) {
+      const assignedGeneration = generation;
+      actorView(run.data, actorId);
+      function current() {
+        requireThat(generation === assignedGeneration, 'STALE_ACTOR_VIEW');
+      }
+      return Object.freeze({
+        view() {
+          current();
+          return actorView(run.data, actorId);
+        },
+        menu(reference) {
+          current();
+          return freeze(decide(reference, actorId).candidates.filter(candidate => candidate.eligible).map(candidate => candidate.act));
+        },
+        submit(commandId, action, args) {
+          current();
+          return submit(command(commandId, action, { ...copy(args), actorId }));
+        },
+      });
     },
     view(actorId) {
       return actorView(run.data, actorId);
     },
-    // Trusted policy/inspection endpoint. The actor-facing endpoint is view(actorId).
-    decide(reference) {
-      const proposal = currentProposal(run.data, reference);
-      requireThat(proposal.status === 'open', 'STALE_PROPOSAL');
-      return chooseClerkResponse(clerkInputs(run.data, proposal).view);
-    },
-    // A privileged audit view. Callers at the actor boundary use view(actorId).
+    decide,
     inspect() {
       return run;
     },
     save() {
-      return canonicalJson({ schema: SAVE_SCHEMA, scenario: settings, run });
+      return canonicalJson({ schema: SAVE_SCHEMA, expressionSchema: EXPRESSION_SCHEMA, scenario: settings, run });
     },
     restore(text) {
       const validated = replay(text);
       settings = validated.settings;
       run = validated.run;
+      generation++;
     },
   });
 }

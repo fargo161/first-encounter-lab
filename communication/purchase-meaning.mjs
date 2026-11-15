@@ -1,164 +1,286 @@
+import { createHash } from 'node:crypto';
 import authoredCues from '../content/based-cues.json' with { type: 'json' };
 import {
-  canonicalJson, copy, fields, freeze, id, integer, isRecord, requireThat, SALIENCE,
-  text, validateObservation
+  canonicalJson, copy, fields, freeze, id, integer, isRecord, packageRef, requireThat, SALIENCE,
+  text, validateObservation,
 } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { projectObservation } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs';
 
-const MESSAGE_SCHEMA = 'lab-purchase-message@0.1';
+export const EXPRESSION_SCHEMA = 'kw-expression@1';
 const PROMINENCE = freeze({ SUBTLE: 'understated', NUANCED: 'measured', OVERT: 'emphatic' });
-const EXPRESSIONS = freeze(copy(authoredCues));
+const CUES = freeze(copy(authoredCues));
 
-function purchaseTerms(proposalId, version, productId, unitId, amountMinor) {
-  id(proposalId, 'proposal');
-  integer(version);
-  id(productId, 'subject');
-  id(unitId, 'unit');
-  integer(amountMinor);
-  requireThat(version > 0 && amountMinor > 0, 'UNSUPPORTED_TERMS');
+function shape(value, keys) {
+  requireThat(isRecord(value) && Object.keys(value).length === keys.length &&
+    keys.every(key => Object.hasOwn(value, key)), 'UNSUPPORTED_TERMS');
+}
+
+function validateScope(scope) {
+  fields(scope, ['producer', 'runId', 'packageRef']);
+  requireThat(scope.producer === 'first-encounter-lab', 'UNSUPPORTED_TERMS');
+  id(scope.runId, 'run');
+  packageRef(scope.packageRef);
+}
+
+function validateReference(reference) {
+  fields(reference, ['scope', 'id', 'version', 'digest']);
+  validateScope(reference.scope);
+  id(reference.id, 'message');
+  requireThat(reference.version === 1 && typeof reference.digest === 'string' &&
+    /^[a-f0-9]{64}$/.test(reference.digest), 'UNSUPPORTED_TERMS');
+}
+
+function validateProposal(proposal, scope) {
+  fields(proposal, ['id', 'version', 'parent']);
+  id(proposal.id, 'proposal');
+  integer(proposal.version);
+  if (proposal.version === 1) {
+    requireThat(proposal.parent === null, 'UNSUPPORTED_TERMS');
+  } else {
+    requireThat(proposal.version > 1, 'UNSUPPORTED_TERMS');
+    validateReference(proposal.parent);
+    requireThat(canonicalJson(proposal.parent.scope) === canonicalJson(scope), 'UNSUPPORTED_TERMS');
+  }
+}
+
+const minorUnit = currency => currency === 'USD' ? 'cent' : 'minor-unit';
+
+function readExchange(body) {
+  shape(body, ['node', 'offered', 'requested']);
+  requireThat(body.node === 'exchange', 'UNSUPPORTED_TERMS');
+  const { offered, requested } = body;
+  requireThat(offered?.node === 'action' && requested?.node === 'action', 'UNSUPPORTED_TERMS');
+  const [pay, give] = offered.act === 'Pay' ? [offered, requested] : [requested, offered];
+  shape(pay, ['node', 'termId', 'act', 'actor', 'recipient', 'quantity']);
+  shape(give, ['node', 'termId', 'act', 'actor', 'for', 'recipient', 'item', 'transfer']);
+  requireThat(pay.act === 'Pay' && pay.termId === 'pay' && give.act === 'Give' && give.termId === 'give', 'UNSUPPORTED_TERMS');
+  id(pay.actor, 'actor');
+  id(give.actor, 'actor');
+  id(pay.recipient, 'store');
+  requireThat(pay.actor !== give.actor && give.recipient === pay.actor && give.for === pay.recipient, 'UNSUPPORTED_TERMS');
+
+  shape(pay.quantity, ['amount', 'unit', 'currency']);
+  const { amount, currency, unit } = pay.quantity;
+  requireThat(Number.isSafeInteger(amount) && amount > 0 && typeof currency === 'string' &&
+    /^[A-Z]{3}$/.test(currency) && unit === minorUnit(currency), 'UNSUPPORTED_TERMS');
+  shape(give.item, ['productId', 'unitId']);
+  id(give.item.productId, 'subject');
+  id(give.item.unitId, 'unit');
+  shape(give.transfer, ['title', 'custody']);
+  requireThat(give.transfer.title === true && give.transfer.custody === true, 'UNSUPPORTED_TERMS');
   return {
-    proposalId,
-    version,
-    exchange: [{ act: 'Pay', amountMinor }, { act: 'Give', productId, unitId }]
+    buyerId: pay.actor, sellerId: give.actor, storeId: pay.recipient,
+    productId: give.item.productId, unitId: give.item.unitId, amountMinor: amount, currency,
   };
 }
 
-function messageRecord({ commandId, sequence, senderId, recipientId, contextMessageId,
-  productId, label, terms, act, vibe, salience }) {
-  id(commandId, 'command');
-  integer(sequence);
-  id(senderId, 'actor');
-  id(recipientId, 'actor');
-  requireThat(senderId !== recipientId, 'WRONG_RECIPIENT');
-  if (contextMessageId !== null) id(contextMessageId, 'message');
-  requireThat(typeof vibe === 'string' && Object.hasOwn(EXPRESSIONS, vibe) && SALIENCE.includes(salience), 'UNAVAILABLE_EXPRESSION');
+/** Validate the complete executable headless subset. Explicit groups cannot be flattened into supported terms. */
+export function validateExpression(expression) {
+  canonicalJson(expression);
+  shape(expression, ['schema', 'id', 'version', 'scope', 'function', 'speaker', 'addressees',
+    'force', 'time', 'proposal', 'body']);
+  requireThat(expression.schema === EXPRESSION_SCHEMA && expression.version === 1, 'UNSUPPORTED_TERMS');
+  validateScope(expression.scope);
+  id(expression.id, 'message');
+  id(expression.speaker, 'actor');
+  requireThat(Array.isArray(expression.addressees) && expression.addressees.length === 1, 'WRONG_RECIPIENT');
+  const [recipient] = expression.addressees;
+  id(recipient, 'actor');
+  requireThat(recipient !== expression.speaker, 'WRONG_RECIPIENT');
+  shape(expression.time, ['stance']);
+  validateProposal(expression.proposal, expression.scope);
 
-  const expression = EXPRESSIONS[vibe];
-  const amount = terms.exchange[0].amountMinor;
-  const unit = terms.exchange[1].unitId;
-  const offer = act === 'propose_exchange';
+  if (expression.function === 'OFFER') {
+    requireThat(expression.force === 'proposal' && expression.time.stance === 'future', 'UNSUPPORTED_TERMS');
+    readExchange(expression.body);
+    requireThat(expression.body.offered.actor === expression.speaker && expression.body.requested.actor === recipient,
+      'WRONG_RECIPIENT');
+    return true;
+  }
+
+  requireThat(expression.function === 'REMARK' && expression.force === 'currentSelfPerformance' &&
+    expression.time.stance === 'current', 'UNSUPPORTED_TERMS');
+  const { body, proposal } = expression;
+  shape(body, ['node', 'act', 'actor', 'recipient', 'target']);
+  requireThat(body.node === 'action' && body.act === 'Accept' &&
+    body.actor === expression.speaker && body.recipient === recipient, 'UNSUPPORTED_TERMS');
+  shape(body.target, ['proposalId', 'proposalVersion', 'expression', 'observationId']);
+  requireThat(body.target.proposalId === proposal.id && body.target.proposalVersion === proposal.version, 'UNSUPPORTED_TERMS');
+  id(body.target.observationId, 'observation');
+  validateReference(body.target.expression);
+  requireThat(body.target.expression.id !== expression.id &&
+    canonicalJson(body.target.expression.scope) === canonicalJson(expression.scope), 'UNSUPPORTED_TERMS');
+  return true;
+}
+
+export function exchangeTerms(expression) {
+  validateExpression(expression);
+  requireThat(expression.function === 'OFFER', 'UNSUPPORTED_TERMS');
+  return freeze(readExchange(expression.body));
+}
+
+export function expressionReference(expression) {
+  validateExpression(expression);
   return freeze({
-    schema: MESSAGE_SCHEMA,
-    id: `message_${commandId.slice('command_'.length)}`,
-    commandId,
+    scope: copy(expression.scope),
+    id: expression.id,
+    version: expression.version,
+    digest: createHash('sha256').update(canonicalJson(expression), 'utf8').digest('hex'),
+  });
+}
+
+function expressionRecord(input, fn, force, stance, proposal, body) {
+  return {
+    schema: EXPRESSION_SCHEMA,
+    id: input.id,
+    version: 1,
+    scope: input.scope,
+    function: fn,
+    speaker: input.speaker,
+    addressees: [input.recipient],
+    force,
+    time: { stance },
+    proposal,
+    body,
+  };
+}
+
+function authoredStyle(vibe, salience) {
+  requireThat(typeof vibe === 'string' && Object.hasOwn(CUES, vibe) &&
+    SALIENCE.includes(salience), 'UNAVAILABLE_EXPRESSION');
+  return CUES[vibe];
+}
+
+function messageRecord({ sequence, delivery }, expression, label) {
+  validateExpression(expression);
+  integer(sequence);
+  requireThat(sequence > 0);
+  shape(delivery, ['vibe', 'salience']);
+  const { vibe, salience } = delivery;
+  const style = authoredStyle(vibe, salience);
+  return freeze(copy({
+    id: expression.id,
     sequence,
-    contextMessageId,
+    expression,
+    label,
     privateComposition: {
-      authorId: senderId,
+      authorId: expression.speaker,
       selectedVibe: vibe,
       selectedSalience: salience,
-      templateId: expression.templateId,
-      intendedFraming: expression.cues.map(cue => cue.text).join(' ')
+      templateId: style.templateId,
+      intendedFraming: style.cues.map(cue => cue.text).join(' '),
     },
-    outward: {
-      family: offer ? 'Offer' : 'Remark',
-      act,
-      senderId,
-      recipientIds: [recipientId],
-      subjectIds: [productId],
-      targetId: productId,
-      scope: { subjectId: productId, kind: 'subject' },
-      content: {
-        kind: offer ? 'proposal' : 'response',
-        text: offer
-          ? `Offers Pay ${amount} minor units in exchange for Give ${label} (${unit}).`
-          : `Accepts proposal ${terms.proposalId}, version ${terms.version}, for ${amount} minor units and item ${unit}.`
-      },
-      framing: copy(expression.cues),
-      prominence: PROMINENCE[salience],
-      terms
-    }
-  });
+  }));
 }
 
-/** Only the one known-product Pay-for-Give shape is compiled by this slice. */
-export function compileOffer({ commandId, sequence, buyerId, sellerId, proposalId, version, draft, references }) {
-  canonicalJson(draft);
-  requireThat(isRecord(draft) && Object.keys(draft).length === 4 &&
-    ['productId', 'amountMinor', 'vibe', 'salience'].every(key => Object.hasOwn(draft, key)), 'UNSUPPORTED_TERMS');
-  id(draft.productId, 'subject');
-  requireThat(Array.isArray(references));
-  const known = references.find(ref => ref.productId === draft.productId);
-  requireThat(Boolean(known), 'UNKNOWN_REFERENCE');
-  text(known.label, 120);
-  const terms = purchaseTerms(proposalId, version, draft.productId, known.unitId, draft.amountMinor);
-
-  return messageRecord({
-    commandId, sequence, senderId: buyerId, recipientId: sellerId, contextMessageId: null,
-    productId: draft.productId, label: known.label, terms, act: 'propose_exchange',
-    vibe: draft.vibe, salience: draft.salience
-  });
+/** The caller supplies actor-known references and verifies authority at the Encounter boundary. */
+export function compileOffer(input) {
+  const { terms, proposal, speaker, label } = input;
+  canonicalJson(terms);
+  shape(terms, ['buyerId', 'sellerId', 'storeId', 'productId', 'unitId', 'amountMinor', 'currency']);
+  text(label, 120);
+  const pay = {
+    node: 'action',
+    termId: 'pay',
+    act: 'Pay',
+    actor: terms.buyerId,
+    recipient: terms.storeId,
+    quantity: { amount: terms.amountMinor, unit: minorUnit(terms.currency), currency: terms.currency },
+  };
+  const give = {
+    node: 'action',
+    termId: 'give',
+    act: 'Give',
+    actor: terms.sellerId,
+    for: terms.storeId,
+    recipient: terms.buyerId,
+    item: { productId: terms.productId, unitId: terms.unitId },
+    transfer: { title: true, custody: true },
+  };
+  const [offered, requested] = speaker === terms.buyerId ? [pay, give] : [give, pay];
+  const body = { node: 'exchange', offered, requested };
+  const expression = expressionRecord(input, 'OFFER', 'proposal', 'future', proposal, body);
+  return messageRecord(input, expression, label);
 }
 
-/** This records assent to the actual delivered version and leaves all effects to Encounter. */
-export function compileAcceptance({ commandId, sequence, sellerId, proposal, reference, offerObservation }) {
+function validateReceivedOffer({ scope, sequence, speaker, recipient, offer, receipt, reference }) {
   requireThat(isRecord(reference) && Object.keys(reference).length === 2 &&
     Object.hasOwn(reference, 'id') && Object.hasOwn(reference, 'version'), 'AMBIGUOUS_ASSENT');
-  requireThat(Boolean(proposal) && reference.id === proposal.id && reference.version === proposal.version &&
-    proposal.status === 'open', 'STALE_PROPOSAL');
-  requireThat(sellerId === proposal.sellerId, 'WRONG_RECIPIENT');
-  requireThat(Boolean(offerObservation), 'NO_RECEIVING_PATH');
-  validateObservation(offerObservation);
-  const received = offerObservation.receivedDetails.communication;
-  const terms = purchaseTerms(proposal.id, proposal.version, proposal.productId, proposal.unitId, proposal.amountMinor);
-
-  requireThat(offerObservation.observerId === sellerId && offerObservation.channel === 'hearing' &&
-    offerObservation.sequence < sequence &&
-    offerObservation.source.kind === 'message' && offerObservation.source.id === proposal.offerMessageId &&
-    offerObservation.roots.some(root => root.kind === 'message' && root.id === proposal.offerMessageId) &&
-    received?.family === 'Offer' && received.act === 'propose_exchange' &&
-    received.senderId === proposal.buyerId && received.recipientIds?.length === 1 &&
-    received.recipientIds[0] === sellerId && received.targetId === proposal.productId, 'NO_RECEIVING_PATH');
-  requireThat(isRecord(received.terms) && canonicalJson(received.terms) === canonicalJson(terms), 'STALE_PROPOSAL');
-
-  return messageRecord({
-    commandId, sequence, senderId: sellerId, recipientId: proposal.buyerId,
-    contextMessageId: proposal.offerMessageId, productId: proposal.productId, terms,
-    act: 'accept_exchange', vibe: 'EA', salience: 'NUANCED'
-  });
+  requireThat(offer?.expression?.function === 'OFFER', 'STALE_PROPOSAL');
+  const expression = offer.expression;
+  const { proposal } = expression;
+  requireThat(reference.id === proposal.id && reference.version === proposal.version &&
+    canonicalJson(expression.scope) === canonicalJson(scope), 'STALE_PROPOSAL');
+  requireThat(expression.addressees[0] === speaker && expression.speaker === recipient, 'WRONG_RECIPIENT');
+  requireThat(Boolean(receipt), 'NO_RECEIVING_PATH');
+  validateObservation(receipt);
+  requireThat(receipt.channel === 'hearing' && receipt.observerId === speaker &&
+    receipt.sequence === offer.sequence && receipt.sequence < sequence &&
+    receipt.source.kind === 'message' && receipt.source.id === offer.id &&
+    receipt.roots.some(root => root.kind === 'message' && root.id === offer.id) &&
+    Object.hasOwn(receipt.receivedDetails, 'communication'), 'NO_RECEIVING_PATH');
+  requireThat(canonicalJson(receipt.receivedDetails.communication) === canonicalJson(outwardCommunication(offer)),
+    'STALE_PROPOSAL');
+  return expression;
 }
 
-/** Project the explicitly outward part using the native recipient observation boundary. */
-export function observePurchaseMessage(message, { observationId, observerId }) {
-  canonicalJson(message);
-  fields(message, ['schema', 'id', 'commandId', 'sequence', 'contextMessageId', 'privateComposition', 'outward']);
-  requireThat(message.schema === MESSAGE_SCHEMA, 'UNSUPPORTED_TERMS');
-  const outward = message.outward;
-  fields(outward, ['family', 'act', 'senderId', 'recipientIds', 'subjectIds', 'targetId', 'scope', 'content', 'framing', 'prominence', 'terms']);
-  fields(outward.scope, ['subjectId', 'kind']);
-  fields(outward.content, ['kind', 'text']);
-  text(outward.content.text);
-  requireThat(Array.isArray(outward.framing), 'UNSUPPORTED_TERMS');
-  for (const cue of outward.framing) {
-    fields(cue, ['kind', 'text']);
-    text(cue.kind, 100);
-    text(cue.text);
-  }
-  requireThat(Object.values(EXPRESSIONS).some(expression =>
-    canonicalJson(expression.cues) === canonicalJson(outward.framing)), 'UNAVAILABLE_EXPRESSION');
-  requireThat(Object.values(PROMINENCE).includes(outward.prominence), 'UNAVAILABLE_EXPRESSION');
-  fields(outward.terms, ['proposalId', 'version', 'exchange']);
-  requireThat(Array.isArray(outward.terms.exchange) && outward.terms.exchange.length === 2, 'UNSUPPORTED_TERMS');
-  fields(outward.terms.exchange[0], ['act', 'amountMinor']);
-  fields(outward.terms.exchange[1], ['act', 'productId', 'unitId']);
-  const [pay, give] = outward.terms.exchange;
-  requireThat(pay.act === 'Pay' && give.act === 'Give', 'UNSUPPORTED_TERMS');
-  purchaseTerms(outward.terms.proposalId, outward.terms.version, give.productId, give.unitId, pay.amountMinor);
-  const isOffer = outward.family === 'Offer' && outward.act === 'propose_exchange' && message.contextMessageId === null;
-  const isAssent = outward.family === 'Remark' && outward.act === 'accept_exchange' && typeof message.contextMessageId === 'string';
-  requireThat(isOffer || isAssent, 'UNSUPPORTED_TERMS');
-  if (isAssent) id(message.contextMessageId, 'message');
-  id(outward.senderId, 'actor');
-  requireThat(outward.targetId === give.productId && outward.scope.subjectId === give.productId &&
-    outward.scope.kind === 'subject' && Array.isArray(outward.subjectIds) && outward.subjectIds.length === 1 &&
-    outward.subjectIds[0] === give.productId, 'UNSUPPORTED_TERMS');
-  requireThat(Array.isArray(outward.recipientIds) && outward.recipientIds.length === 1 &&
-    outward.recipientIds[0] === observerId, 'NO_RECEIVING_PATH');
+/** The trusted runtime supplies the currently eligible Offer and the actual recipient receipt. */
+export function compileAcceptance(input) {
+  const offer = validateReceivedOffer(input);
+  const { speaker, recipient, receipt } = input;
+  const body = {
+    node: 'action',
+    act: 'Accept',
+    actor: speaker,
+    recipient,
+    target: {
+      proposalId: offer.proposal.id,
+      proposalVersion: offer.proposal.version,
+      expression: expressionReference(offer),
+      observationId: receipt.id,
+    },
+  };
+  const expression = expressionRecord(input, 'REMARK', 'currentSelfPerformance', 'current', offer.proposal, body);
+  return messageRecord(input, expression, null);
+}
 
-  const source = { kind: 'message', id: message.id };
+export function outwardCommunication(record) {
+  canonicalJson(record);
+  fields(record, ['id', 'sequence', 'expression', 'label', 'privateComposition']);
+  integer(record.sequence);
+  const { expression, privateComposition } = record;
+  validateExpression(expression);
+  requireThat(record.id === expression.id && record.sequence > 0, 'UNSUPPORTED_TERMS');
+  const style = authoredStyle(privateComposition.selectedVibe, privateComposition.selectedSalience);
+  const isOffer = expression.function === 'OFFER';
+  const { id: proposalId, version } = expression.proposal;
+  let line;
+  if (isOffer) {
+    text(record.label, 120);
+    const { amountMinor, currency, unitId } = exchangeTerms(expression);
+    line = 'Offers ' + expression.body.offered.act + ' in exchange for ' +
+      expression.body.requested.act + ', ' + amountMinor + ' ' + minorUnit(currency) +
+      ' (' + currency + ') for ' + record.label + ' (' + unitId + ').';
+  } else {
+    requireThat(record.label === null, 'UNSUPPORTED_TERMS');
+    line = 'Accepts proposal ' + proposalId + ', version ' + version + '.';
+  }
+  return freeze(copy({
+    expression,
+    content: { kind: isOffer ? 'proposal' : 'response', text: line },
+    framing: style.cues,
+    prominence: PROMINENCE[privateComposition.selectedSalience],
+  }));
+}
+
+/** Only the explicitly addressed actor receives the selected expression and outward cues. */
+export function observePurchaseMessage(record, { observationId, observerId }) {
+  const communication = outwardCommunication(record);
+  requireThat(communication.expression.addressees.includes(observerId), 'NO_RECEIVING_PATH');
+  const source = { kind: 'message', id: record.id };
   return projectObservation({
-    ...source, sequence: message.sequence, details: { communication: outward }
+    ...source, sequence: record.sequence, details: { communication },
   }, {
-    id: observationId, observerId, channel: 'hearing', receivedKeys: ['communication'], roots: [source]
+    id: observationId, observerId, channel: 'hearing', receivedKeys: ['communication'], roots: [source],
   });
 }

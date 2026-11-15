@@ -1,84 +1,165 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compileAcceptance, compileOffer, observePurchaseMessage } from '../../../communication/purchase-meaning.mjs';
+import {
+  compileAcceptance, compileOffer, exchangeTerms, expressionReference, observePurchaseMessage,
+  validateExpression,
+} from '../../../communication/purchase-meaning.mjs';
 
 const buyerId = 'actor_0001';
 const sellerId = 'actor_0002';
-const productId = 'subject_0001';
-const unitId = 'unit_0001';
-const proposalId = 'proposal_0001';
-const references = [{ productId, label: 'Tea', priceMinor: 500, unitId }];
+const bystanderId = 'actor_0003';
+const proposal = { id: 'proposal_0001', version: 1, parent: null };
+const scope = {
+  producer: 'first-encounter-lab',
+  runId: 'run_0001',
+  packageRef: { id: 'package_0001', revision: 2, digest: 'a'.repeat(64) },
+};
 const terms = {
-  proposalId, version: 1,
-  exchange: [{ act: 'Pay', amountMinor: 500 }, { act: 'Give', productId, unitId }]
+  buyerId, sellerId, storeId: 'store_0001', productId: 'subject_0001', unitId: 'unit_0001',
+  amountMinor: 300, currency: 'USD',
 };
 
 function offer(overrides = {}) {
   return compileOffer({
-    commandId: 'command_0001', sequence: 1, buyerId, sellerId, proposalId, version: 1,
-    draft: { productId, amountMinor: 500, vibe: 'SE', salience: 'NUANCED' }, references, ...overrides
+    scope, id: 'message_0001', sequence: 1, speaker: buyerId, recipient: sellerId, proposal,
+    terms, delivery: { vibe: 'SE', salience: 'NUANCED' }, label: 'Tea', ...overrides,
   });
 }
 
-function assent(overrides = {}) {
-  const message = offer();
-  const proposal = { id: proposalId, version: 1, buyerId, sellerId, productId, unitId,
-    amountMinor: 500, offerMessageId: message.id, status: 'open' };
+function heard(record = offer(), observerId = record.expression.addressees[0]) {
+  return observePurchaseMessage(record, { observationId: 'observation_0001', observerId });
+}
 
+function assent(record = offer(), overrides = {}) {
+  const { id, version } = record.expression.proposal;
   return compileAcceptance({
-    commandId: 'command_0002', sequence: 2, sellerId, proposal, reference: { id: proposalId, version: 1 },
-    offerObservation: observePurchaseMessage(message, { observationId: 'observation_0001', observerId: sellerId }),
-    ...overrides
+    scope, id: 'message_0002', sequence: 2, speaker: record.expression.addressees[0],
+    recipient: record.expression.speaker, offer: record, receipt: heard(record),
+    reference: { id, version }, delivery: { vibe: 'EA', salience: 'NUANCED' }, ...overrides,
   });
 }
 
-test('a known product compiles into one immutable, versioned Pay-for-Give Offer', () => {
-  const message = offer();
-  assert.equal(message.id, 'message_0001');
-  assert.equal(message.outward.family, 'Offer');
-  assert.equal(message.outward.targetId, productId);
-  assert.deepEqual(message.outward.recipientIds, [sellerId]);
-  assert.deepEqual(message.outward.terms, terms);
-  assert.throws(() => { message.outward.terms.exchange[0].amountMinor = 1; }, TypeError);
+test('a $3 product compiles into one immutable versioned exchange of typed Pay and Give', () => {
+  const record = offer();
+  const { expression } = record;
+  assert.equal(expression.id, record.id);
+  assert.equal(expression.schema, 'kw-expression@1');
+  assert.equal(expression.function, 'OFFER');
+  assert.equal(expression.force, 'proposal');
+  assert.equal(expression.time.stance, 'future');
+  assert.deepEqual(expression.addressees, [sellerId]);
+  assert.deepEqual(expression.proposal, proposal);
+  assert.deepEqual(expression.body, {
+    node: 'exchange',
+    offered: {
+      node: 'action', termId: 'pay', act: 'Pay', actor: buyerId, recipient: terms.storeId,
+      quantity: { amount: 300, unit: 'cent', currency: 'USD' },
+    },
+    requested: {
+      node: 'action', termId: 'give', act: 'Give', actor: sellerId, for: terms.storeId,
+      recipient: buyerId, item: { productId: terms.productId, unitId: terms.unitId },
+      transfer: { title: true, custody: true },
+    },
+  });
+  assert.deepEqual(exchangeTerms(expression), terms);
+  assert.throws(() => { expression.body.offered.quantity.amount = 400; }, TypeError);
 });
 
-test('unknown products, unsupported shapes and unauthored vibes do not compile', () => {
-  const draft = { productId, amountMinor: 500, vibe: 'EA', salience: 'NUANCED' };
-  assert.throws(() => offer({ references: [] }), { code: 'UNKNOWN_REFERENCE' });
-  assert.throws(() => offer({ draft: { ...draft, hold: true } }), { code: 'UNSUPPORTED_TERMS' });
-  assert.throws(() => offer({ draft: { ...draft, vibe: 'BA' } }), { code: 'UNAVAILABLE_EXPRESSION' });
+test('a clerk-originated Offer gives the same terms with Give on the offered side', () => {
+  const record = offer({ speaker: sellerId, recipient: buyerId });
+  assert.equal(record.expression.body.offered.act, 'Give');
+  assert.equal(record.expression.body.requested.actor, buyerId);
+  assert.deepEqual(exchangeTerms(record.expression), terms);
+  const acceptance = assent(record);
+  assert.equal(acceptance.expression.body.actor, buyerId);
+  assert.equal(acceptance.expression.body.recipient, sellerId);
 });
 
-test('recipient hears authored cues and prominence, without the speaker’s private composition', () => {
-  const message = offer();
-  assert.equal(message.privateComposition.selectedVibe, 'SE');
-  const seen = observePurchaseMessage(message, { observationId: 'observation_0001', observerId: sellerId });
-  assert.deepEqual(seen.receivedDetails, { communication: message.outward });
-  assert.deepEqual(seen.roots, [{ kind: 'message', id: message.id }]);
-  assert.equal(seen.receivedDetails.communication.prominence, 'measured');
-  assert.deepEqual(seen.receivedDetails.communication.framing.map(cue => cue.kind), ['displayed_concern']);
-  assert.doesNotMatch(JSON.stringify(seen), /privateComposition|selectedVibe|selectedSalience|intendedFraming|templateId/);
-  assert.throws(() => observePurchaseMessage(message, { observationId: 'observation_0002', observerId: buyerId }), { code: 'NO_RECEIVING_PATH' });
+test('unadmitted shapes, amounts and unauthored vibes cannot compile or produce partial meaning', () => {
+  assert.throws(() => offer({ terms: { ...terms, amountMinor: 0 } }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => offer({ terms: { ...terms, hold: true } }), { code: 'UNSUPPORTED_TERMS' });
+  assert.throws(() => offer({ delivery: { vibe: 'BA', salience: 'NUANCED' } }), { code: 'UNAVAILABLE_EXPRESSION' });
+  const record = offer();
+  for (const node of ['AND', 'OR', 'IF', 'BEFORE', 'AFTER', 'UNTIL', 'NOT', 'ABOUT', 'BECAUSE']) {
+    const expression = structuredClone(record.expression);
+    expression.body.offered = { node, children: [expression.body.offered] };
+    assert.throws(() => validateExpression(expression), { code: 'UNSUPPORTED_TERMS' }, node);
+    assert.throws(() => heard({ ...record, expression }), { code: 'UNSUPPORTED_TERMS' }, node);
+  }
 });
 
-test('the authorized recipient assents with a linked Remark that repeats the exact frozen terms', () => {
-  const acceptance = assent();
-  assert.equal(acceptance.contextMessageId, 'message_0001');
-  assert.equal(acceptance.outward.family, 'Remark');
-  assert.equal(acceptance.outward.act, 'accept_exchange');
-  assert.deepEqual(acceptance.outward.terms, terms);
-  assert.deepEqual(acceptance.outward.recipientIds, [buyerId]);
+test('only the addressee hears exact terms and outward cues without private composition', () => {
+  const record = offer();
+  const receipt = heard(record);
+  const { communication } = receipt.receivedDetails;
+  assert.equal(record.privateComposition.selectedVibe, 'SE');
+  assert.deepEqual(receipt.roots, [{ kind: 'message', id: record.id }]);
+  assert.deepEqual(communication.expression, record.expression);
+  assert.equal(communication.prominence, 'measured');
+  assert.deepEqual(communication.framing.map(cue => cue.kind), ['displayed_concern']);
+  assert.match(communication.content.text, /300 cent \(USD\).*Tea \(unit_0001\)/);
+  assert.doesNotMatch(JSON.stringify(receipt), /privateComposition|selectedVibe|selectedSalience|intendedFraming|templateId/);
+  for (const actorId of [buyerId, bystanderId]) {
+    assert.throws(() => heard(record, actorId), { code: 'NO_RECEIVING_PATH' });
+  }
 });
 
-test('ambiguous or stale assent, wrong recipient and missing hearing do not produce an acceptance', () => {
-  assert.throws(() => assent({ reference: null }), { code: 'AMBIGUOUS_ASSENT' });
-  assert.throws(() => assent({ reference: { id: proposalId, version: 2 } }), { code: 'STALE_PROPOSAL' });
-  assert.throws(() => assent({ sellerId: buyerId }), { code: 'WRONG_RECIPIENT' });
-  assert.throws(() => assent({ offerObservation: null }), { code: 'NO_RECEIVING_PATH' });
+test('current self-assent cites the actual received Offer by exact immutable reference', () => {
+  const record = offer();
+  const receipt = heard(record);
+  const { expression } = assent(record, { receipt });
+  assert.equal(expression.function, 'REMARK');
+  assert.equal(expression.force, 'currentSelfPerformance');
+  assert.equal(expression.time.stance, 'current');
+  assert.deepEqual(expression.addressees, [buyerId]);
+  assert.deepEqual(expression.body.target, {
+    proposalId: proposal.id,
+    proposalVersion: proposal.version,
+    expression: expressionReference(record.expression),
+    observationId: receipt.id,
+  });
+  assert.throws(() => exchangeTerms(expression), { code: 'UNSUPPORTED_TERMS' });
 });
 
-test('even a matching target and version cannot assent to changed delivered terms', () => {
-  const observed = structuredClone(observePurchaseMessage(offer(), { observationId: 'observation_0001', observerId: sellerId }));
-  observed.receivedDetails.communication.terms.exchange[0].amountMinor = 400;
-  assert.throws(() => assent({ offerObservation: observed }), { code: 'STALE_PROPOSAL' });
+test('ambiguous and stale references, wrong parties, missing receipts and copied receipts do not assent', () => {
+  const record = offer();
+  assert.throws(() => assent(record, { reference: null }), { code: 'AMBIGUOUS_ASSENT' });
+  assert.throws(() => assent(record, { reference: { id: proposal.id, version: 2 } }), { code: 'STALE_PROPOSAL' });
+  assert.throws(() => assent(record, { speaker: bystanderId }), { code: 'WRONG_RECIPIENT' });
+  assert.throws(() => assent(record, { receipt: null }), { code: 'NO_RECEIVING_PATH' });
+  assert.throws(() => assent(record, { receipt: { ...heard(record), observerId: buyerId } }), { code: 'NO_RECEIVING_PATH' });
+  assert.throws(() => assent(record, { sequence: 1 }), { code: 'NO_RECEIVING_PATH' });
+  const otherRun = { ...scope, runId: 'run_0002' };
+  assert.throws(() => assent(record, { scope: otherRun }), { code: 'STALE_PROPOSAL' });
+  assert.notEqual(expressionReference(record.expression).digest, expressionReference(offer({ scope: otherRun }).expression).digest);
+});
+
+test('equally named received terms cannot be changed or quoted into assent', () => {
+  const record = offer();
+  const receipt = structuredClone(heard(record));
+  receipt.receivedDetails.communication.expression.body.offered.quantity.amount = 400;
+  assert.throws(() => assent(record, { receipt }), { code: 'STALE_PROPOSAL' });
+  const acceptance = assent(record);
+  for (const variant of [
+    { force: 'assertion', time: { stance: 'past' } },
+    { force: 'assertion', time: { stance: 'quoted' } },
+    { force: 'currentSelfPerformance', time: { stance: 'future' } },
+  ]) {
+    assert.throws(() => validateExpression({ ...acceptance.expression, ...variant }), { code: 'UNSUPPORTED_TERMS' });
+  }
+});
+
+test('a new proposal version retains the exact qualified parent and leaves the prior terms intact', () => {
+  const original = offer();
+  const parent = expressionReference(original.expression);
+  const next = offer({
+    id: 'message_0003', sequence: 3, proposal: { ...proposal, version: 2, parent },
+    terms: { ...terms, amountMinor: 400 },
+  });
+  assert.deepEqual(next.expression.proposal.parent, parent);
+  assert.equal(exchangeTerms(original.expression).amountMinor, 300);
+  assert.equal(exchangeTerms(next.expression).amountMinor, 400);
+  assert.throws(() => offer({
+    proposal: { ...proposal, version: 2, parent: { ...parent, scope: { ...scope, runId: 'run_0002' } } },
+  }), { code: 'UNSUPPORTED_TERMS' });
 });

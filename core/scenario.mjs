@@ -1,128 +1,193 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import products from '../content/products.json' with { type: 'json' };
-import { canonicalJson, copy, fields, freeze, id, integer, requireThat } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
+import { canonicalJson, copy, fields, freeze, id, integer, requireThat, text } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/contracts.mjs';
 import { projectObservation, recipientHistory } from '../vendor/encounter-m3/76a92fd82ac5ec6f10748f0b439a5d661fff5ea5/src/views.mjs';
+import { exchangeTerms, outwardCommunication } from '../communication/purchase-meaning.mjs';
 
 export const BUYER_ID = 'actor_0001';
 export const CLERK_ID = 'actor_0002';
 export const STORE_ID = 'store_0001';
-
 export const PRODUCT_ID = products.offerable.productId;
 export const UNKNOWN_PRODUCT_ID = products.unobserved.productId;
 export const UNIT_ID = products.offerable.unitId;
 export const PRICE_MINOR = products.offerable.priceMinor;
 
-export const PACKAGE_REF = freeze({
-  id: 'package_0001',
-  revision: 1,
-  digest: createHash('sha256').update(canonicalJson({
-    schema: 'lab-headless-purchase@1',
-    products,
-  })).digest('hex'),
-});
+function fixtureProduct(product, kind) {
+  const { productId, label, priceMinor } = product;
+  return { productId, label, priceMinor, kind };
+}
 
 const defaults = freeze({
-  runId: 'run_0001',
   humanId: BUYER_ID,
-  buyerCashMinor: 1000,
-  tillMinor: 0,
-  stock: 1,
+  currency: 'USD',
+  store: { id: STORE_ID, balanceMinor: 0 },
+  actors: [
+    { id: BUYER_ID, name: 'Customer', role: 'customer', balanceMinor: 1000 },
+    { id: CLERK_ID, name: 'Clerk', role: 'clerk', balanceMinor: 0 },
+  ],
+  products: [fixtureProduct(products.offerable, 'drink'), fixtureProduct(products.unobserved, 'supply')],
+  units: [
+    { id: UNIT_ID, productId: PRODUCT_ID, ownerId: STORE_ID, holderId: CLERK_ID },
+    { id: products.unobserved.unitId, productId: UNKNOWN_PRODUCT_ID, ownerId: STORE_ID, holderId: CLERK_ID },
+  ],
+  knowledge: [
+    { actorId: BUYER_ID, unitId: UNIT_ID },
+    { actorId: CLERK_ID, unitId: UNIT_ID, available: true },
+  ],
   failFirstHandover: false,
-  clerkStockObservation: null,
 });
 
+function distinct(entries, key) {
+  requireThat(Array.isArray(entries) && entries.length === new Set(entries.map(key)).size, 'INVALID_SCENARIO');
+}
+
 export function configureScenario(options = {}) {
-  fields(options, [], Object.keys(defaults));
-  const configured = { ...defaults, ...copy(options) };
-  id(configured.runId, 'run');
-  requireThat([BUYER_ID, CLERK_ID].includes(configured.humanId), 'INVALID_CONTROLLER');
-  integer(configured.buyerCashMinor);
-  integer(configured.tillMinor);
-  integer(configured.buyerCashMinor + configured.tillMinor);
-  requireThat([0, 1].includes(configured.stock), 'INVALID_STOCK');
-  requireThat(typeof configured.failFirstHandover === 'boolean');
-  requireThat(configured.clerkStockObservation === null || typeof configured.clerkStockObservation === 'boolean');
-  return freeze(configured);
+  fields(options, [], ['runId', ...Object.keys(defaults)]);
+  const settings = { runId: 'run_' + randomUUID().replaceAll('-', ''), ...copy(defaults), ...copy(options) };
+  const { actors, humanId, store, currency, runId } = settings;
+  id(runId, 'run');
+  requireThat(/^[A-Z]{3}$/.test(currency) && typeof currency === 'string', 'INVALID_CURRENCY');
+  fields(store, ['id', 'balanceMinor']);
+  id(store.id, 'store');
+  integer(store.balanceMinor);
+  distinct(actors, actor => actor.id);
+  requireThat(actors.length > 0 && (humanId === null || actors.some(actor => actor.id === humanId)), 'INVALID_CONTROLLER');
+  for (const actor of actors) {
+    fields(actor, ['id', 'name', 'role', 'balanceMinor']);
+    id(actor.id, 'actor');
+    text(actor.name, 100);
+    requireThat(['clerk', 'customer', 'observer'].includes(actor.role), 'INVALID_ROLE');
+    integer(actor.balanceMinor);
+  }
+  integer(actors.reduce((total, actor) => total + actor.balanceMinor, store.balanceMinor));
+
+  distinct(settings.products, entry => entry.productId);
+  for (const product of settings.products) {
+    fields(product, ['productId', 'label', 'priceMinor', 'kind']);
+    id(product.productId, 'subject');
+    text(product.label, 100);
+    text(product.kind, 100);
+    integer(product.priceMinor);
+    requireThat(product.priceMinor > 0, 'INVALID_PRICE');
+  }
+  distinct(settings.units, entry => entry.id);
+  for (const unit of settings.units) {
+    fields(unit, ['id', 'productId', 'ownerId', 'holderId']);
+    id(unit.id, 'unit');
+    requireThat(settings.products.some(product => product.productId === unit.productId), 'INVALID_PRODUCT');
+    requireThat(unit.ownerId === store.id || actors.some(actor => actor.id === unit.ownerId), 'INVALID_OWNER');
+    requireThat(actors.some(actor => actor.id === unit.holderId), 'INVALID_HOLDER');
+  }
+  distinct(settings.knowledge, entry => [entry.actorId, entry.unitId].join('/'));
+  for (const grant of settings.knowledge) {
+    fields(grant, ['actorId', 'unitId'], ['available', 'priceKnown']);
+    requireThat(settings.units.some(unit => grant.unitId === unit.id) && actors.some(actor => actor.id === grant.actorId), 'INVALID_GRANT');
+    requireThat(!Object.hasOwn(grant, 'available') || typeof grant.available === 'boolean', 'INVALID_GRANT');
+    requireThat(!Object.hasOwn(grant, 'priceKnown') || typeof grant.priceKnown === 'boolean', 'INVALID_GRANT');
+  }
+  requireThat(typeof settings.failFirstHandover === 'boolean');
+  return freeze(settings);
+}
+
+export function scenarioPackageRef(settings) {
+  const { runId, ...packageSettings } = settings;
+  return freeze({
+    id: 'package_0001',
+    revision: 2,
+    digest: createHash('sha256').update(canonicalJson({ schema: 'lab-headless-generalization@1', packageSettings })).digest('hex'),
+  });
 }
 
 export function nextId(type, count) {
-  return `${type}_${(count + 1).toString(16).padStart(4, '0')}`;
+  return type + '_' + (count + 1).toString(16).padStart(4, '0');
 }
 
 export function recordEvent(data, type, commandId, details) {
-  const entry = { id: nextId('event', data.events.length), type, commandId, details: copy(details) };
-  data.events.push(entry);
-  return entry;
+  const event = { id: nextId('event', data.events.length), type, commandId, details: copy(details) };
+  data.events.push(event);
+  return event;
 }
 
 export function observeEvent(data, event, observerId, keys, roots = []) {
   const source = { kind: 'event', id: event.id, sequence: data.events.indexOf(event) + 1, details: event.details };
-  const grant = {
+  const observation = projectObservation(source, {
     id: nextId('observation', data.observations.length),
     observerId,
     channel: event.commandId === null ? 'initial' : 'reading',
     receivedKeys: keys,
     roots: [{ kind: 'event', id: event.id }, ...roots],
-  };
-  const observation = projectObservation(source, grant);
+  });
   data.observations.push(observation);
   return observation;
 }
 
 export function initialState(settings) {
+  const { actors, humanId, store, units, products: catalog, knowledge, currency } = settings;
   const data = {
-    actors: [
-      { id: BUYER_ID, name: 'Customer', role: 'customer', controller: settings.humanId === BUYER_ID ? 'human' : 'rules' },
-      { id: CLERK_ID, name: 'Clerk', role: 'clerk', controller: settings.humanId === CLERK_ID ? 'human' : 'rules' },
-    ],
+    actors: actors.map(({ id, name, role }) => ({ id, name, role, controller: id === humanId ? 'human' : 'rules' })),
     ledger: {
-      buyerCashMinor: settings.buyerCashMinor,
-      tillMinor: settings.tillMinor,
-      stock: settings.stock,
-      ownerId: settings.stock ? STORE_ID : null,
-      holderId: settings.stock ? CLERK_ID : null,
+      currency,
+      accounts: [...actors.map(({ id, balanceMinor }) => ({ id, balanceMinor })), copy(store)],
+      units: copy(units),
     },
-    // The second catalog entry has no grant to either participant.
-    catalog: [copy(products.offerable), copy(products.unobserved)],
+    catalog: copy(catalog),
     observations: [],
     events: [],
     messages: [],
     proposals: [],
     decisions: [],
-    judgments: [{ actorId: CLERK_ID, towardId: BUYER_ID, warmth: 0, causeObservationIds: [] }],
   };
-  const catalogObservation = recordEvent(data, 'scenario_observation', null, {
-    provenance: 'scenario_catalog_listing',
-    product: products.offerable,
-    clerkStock: settings.clerkStockObservation ?? Boolean(settings.stock),
-  });
-  observeEvent(data, catalogObservation, BUYER_ID, ['provenance', 'product']);
-  observeEvent(data, catalogObservation, CLERK_ID, ['provenance', 'product', 'clerkStock']);
+  for (const grant of knowledge) {
+    const unit = units.find(entry => entry.id === grant.unitId);
+    const { productId, label, priceMinor, kind } = catalog.find(entry => entry.productId === unit.productId);
+    const event = recordEvent(data, 'scenario_observation', null, {
+      provenance: 'scenario_catalog_listing',
+      product: {
+        productId, label, kind, unitId: unit.id,
+        ...(grant.priceKnown !== false && { priceMinor }),
+        ...(Object.hasOwn(grant, 'available') && { available: grant.available }),
+      },
+    });
+    observeEvent(data, event, grant.actorId, ['provenance', 'product']);
+  }
   return data;
+}
+
+function knownReferences(observations) {
+  const references = new Map();
+  for (const observation of observations) {
+    const received = observation.receivedDetails;
+    if (received.product) {
+      const product = received.product;
+      references.set(product.unitId, { ...product, observationId: observation.id });
+    } else if (received.communication?.expression.function === 'OFFER') {
+      const { productId, unitId } = exchangeTerms(received.communication.expression);
+      if (!references.has(unitId)) references.set(unitId, { productId, unitId, observationId: observation.id });
+    } else if (received.transaction?.kind === 'handover') {
+      const { unitId } = received.transaction;
+      const known = references.get(unitId);
+      if (known) references.set(unitId, { ...known, available: false, availabilityObservationId: observation.id });
+    }
+  }
+  return [...references.values()];
 }
 
 export function actorView(data, actorId) {
   const actor = data.actors.find(candidate => candidate.id === actorId);
   requireThat(actor, 'UNKNOWN_ACTOR');
   const observations = recipientHistory(data.observations, actorId);
-  const references = observations
-    .filter(entry => Object.hasOwn(entry.receivedDetails, 'product'))
-    .map(entry => ({
-      ...entry.receivedDetails.product,
-      observationId: entry.id,
-      ...Object.hasOwn(entry.receivedDetails, 'clerkStock') && { available: entry.receivedDetails.clerkStock },
-    }));
   const messages = data.messages
-    .filter(message => message.outward.senderId === actorId)
-    .map(({ id: messageId, outward }) => ({ id: messageId, outward }));
-  const proposals = data.proposals.filter(proposal => [proposal.buyerId, proposal.sellerId].includes(actorId));
+    .filter(message => message.expression.speaker === actorId)
+    .map(message => ({ id: message.id, outward: outwardCommunication(message) }));
+  const proposals = data.proposals
+    .filter(proposal => proposal.participants.includes(actorId))
+    .map(({ id, version, status, offerMessageId }) => ({ id, version, status, offerMessageId }));
+  const ownAccount = data.ledger.accounts.find(account => account.id === actorId);
 
   return freeze(copy({
     actor,
-    account: actorId === BUYER_ID
-      ? { kind: 'personal_cash', balanceMinor: data.ledger.buyerCashMinor }
-      : { kind: 'store_till', balanceMinor: data.ledger.tillMinor },
-    references,
+    account: { kind: 'personal_cash', currency: data.ledger.currency, balanceMinor: ownAccount.balanceMinor },
+    references: knownReferences(observations),
     observations,
     messages,
     proposals,
@@ -130,17 +195,20 @@ export function actorView(data, actorId) {
 }
 
 export function validateLedger(data, settings) {
-  const { buyerCashMinor, tillMinor, stock, ownerId, holderId } = data.ledger;
-  integer(buyerCashMinor);
-  integer(tillMinor);
-  requireThat(buyerCashMinor + tillMinor === settings.buyerCashMinor + settings.tillMinor);
-  requireThat([0, 1].includes(stock));
-  if (stock === 1) {
-    requireThat(ownerId === STORE_ID && holderId === CLERK_ID);
-  } else if (settings.stock === 1) {
-    requireThat(ownerId === BUYER_ID && holderId === BUYER_ID);
-  } else {
-    requireThat(ownerId === null && holderId === null);
+  const initialBalances = [...settings.actors, settings.store];
+  requireThat(data.ledger.currency === settings.currency, 'INVALID_CURRENCY');
+  requireThat(data.ledger.accounts.length === initialBalances.length, 'INVALID_ACCOUNTS');
+  for (const [index, account] of data.ledger.accounts.entries()) {
+    requireThat(initialBalances[index].id === account.id, 'INVALID_ACCOUNT');
+    integer(account.balanceMinor);
+  }
+  const total = accounts => accounts.reduce((sum, account) => sum + account.balanceMinor, 0);
+  requireThat(total(data.ledger.accounts) === total(initialBalances), 'NONCONSERVING_PAYMENT');
+  requireThat(data.ledger.units.length === settings.units.length, 'INVALID_UNITS');
+  for (const [index, unit] of data.ledger.units.entries()) {
+    requireThat(unit.id === settings.units[index].id && unit.productId === settings.units[index].productId, 'INVALID_UNIT');
+    requireThat(unit.ownerId === settings.store.id || data.actors.some(actor => actor.id === unit.ownerId), 'INVALID_OWNER');
+    requireThat(data.actors.some(actor => actor.id === unit.holderId), 'INVALID_HOLDER');
   }
   return true;
 }
